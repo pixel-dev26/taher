@@ -78,8 +78,8 @@ php artisan view:clear
 ```
 
 The price changes (Sept 2026) need these migrations before the new
-code runs. Without it, saving a stock receipt and opening the Stock screen
-will fail.
+code runs. Without them, the Stock, Products, Receive and Corrections
+screens will fail.
 
 ## Login
 
