@@ -9,14 +9,39 @@ use App\Models\Sku;
 use App\Models\StockLedger;
 use App\Models\StockRecord;
 use App\Models\StockTransfer;
+use App\Services\StockService;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(StockService $stockService)
     {
         $totalSkus = Sku::active()->count();
         $totalGodowns = Godown::active()->count();
+
+        // What's on the shelves right now, valued at each product's average price.
+        // Matches the Stock screen's Avg. Price column, so the two stay consistent.
+        $onHandBySku = StockRecord::selectRaw('sku_id, SUM(on_hand) as total_on_hand')
+            ->groupBy('sku_id')
+            ->pluck('total_on_hand', 'sku_id');
+
+        $totalStockQty = (float) $onHandBySku->sum();
+        $stockPrices = $stockService->averagePrices($onHandBySku->keys()->all());
+
+        $totalStockValue = 0.0;
+        $unpricedStockSkuCount = 0;
+
+        foreach ($onHandBySku as $skuId => $qty) {
+            $qty = (float) $qty;
+            if ($qty <= 0) {
+                continue;
+            }
+            if (isset($stockPrices[$skuId])) {
+                $totalStockValue += $qty * $stockPrices[$skuId]['average'];
+            } else {
+                $unpricedStockSkuCount++;
+            }
+        }
 
         $godowns = Godown::active()->get();
         $stockSummary = [];
@@ -110,7 +135,8 @@ class DashboardController extends Controller
             'totalSkus', 'totalGodowns', 'stockSummary', 'recentActivity',
             'stockTrend', 'stockHealth', 'topMovers', 'lowStockSkus',
             'pendingDispatches', 'pendingDispatchCount', 'incomingTransfers',
-            'todayGrns', 'todayDispatches'
+            'todayGrns', 'todayDispatches',
+            'totalStockQty', 'totalStockValue', 'unpricedStockSkuCount'
         ));
     }
 }

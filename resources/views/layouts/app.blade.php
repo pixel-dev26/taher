@@ -262,6 +262,10 @@
         }
         .stat-card .stat-number { font-size: 1.9rem; font-weight: 700; line-height: 1.2; color: var(--text-dark); }
         .stat-card .stat-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+        /* A rupee figure can run long; shrink to fit one line rather than
+           breaking mid-number, which reads as a typo rather than a wrap. */
+        .stat-card .stat-number-money { font-size: clamp(1.15rem, 4.5vw, 1.9rem); white-space: nowrap; }
+        .stat-card .stat-label .bi-info-circle { font-size: 0.78rem; color: var(--text-muted); cursor: help; }
 
         /* ============ STATUS BADGES (soft colors for readability) ============ */
         .badge { font-weight: 600; font-size: 0.72rem; padding: 0.32em 0.65em; border-radius: 999px; }

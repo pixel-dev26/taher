@@ -66,6 +66,34 @@
     </div>
 </div>
 
+{{-- What's on the shelves right now, valued at each product's average price
+     (see StockService::averagePrices — same figure as the Stock screen). --}}
+<div class="row g-3 mt-1">
+    <div class="col-6 col-md-6">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand-dark);"><i class="bi bi-currency-rupee"></i></div>
+                <div class="stat-number stat-number-money" title="{{ \App\Support\Money::inr($totalStockValue) }} exact">{{ \App\Support\Money::inr($totalStockValue, decimals: 0) }}</div>
+                <div class="stat-label">
+                    Stock Value
+                    @if($unpricedStockSkuCount > 0)
+                        <i class="bi bi-info-circle" title="{{ $unpricedStockSkuCount }} product(s) with stock have no price yet, so their value isn't included — it's an estimate"></i>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-6">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="stat-icon" style="background:var(--info-soft); color:var(--info-dark);"><i class="bi bi-boxes"></i></div>
+                <div class="stat-number">{{ number_format($totalStockQty, 0) }}</div>
+                <div class="stat-label">Items in Stock</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row g-3 mt-1">
     <div class="col-6 col-md-3">
         <div class="card stat-card">
