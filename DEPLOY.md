@@ -58,10 +58,28 @@ chmod -R 775 storage bootstrap/cache
 # 6. Recreate the storage symlink (logo, dispatch PDFs need this)
 php artisan storage:link
 
-# 7. Sanity check — should report no pending migrations, since the
-#    included database is already at the current schema
-php artisan migrate:status
+# 7. Back up the database, then apply pending migrations. These only add
+#    columns (e.g. purchase price on stock receipts); existing records are
+#    kept. Never use migrate:fresh — see "Notes on the data".
+cp database/database.sqlite database/database-backup-$(date +%Y%m%d).sqlite
+php artisan migrate --force
+php artisan migrate:status   # everything should now read "Ran"
 ```
+
+## Updating an existing install
+
+When deploying new code to a server that is already live:
+
+```bash
+cp database/database.sqlite database/database-backup-$(date +%Y%m%d).sqlite
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan view:clear
+```
+
+The purchase-price change (Sept 2026) needs this migration before the new
+code runs. Without it, saving a stock receipt and opening the Stock screen
+will fail.
 
 ## Login
 

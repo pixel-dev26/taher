@@ -6,7 +6,7 @@
  *
  * Behaviour is driven by data attributes, so the same file serves every form:
  *   #skuSearchInput[data-sku-picker][data-godown-field][data-require-godown]
- *   #lineItems[data-next-index][data-show-available][data-allow-negative]
+ *   #lineItems[data-next-index][data-show-available][data-allow-negative][data-show-price]
  *   #lineItemTemplate  — the row markup, cloned per product
  */
 (function () {
@@ -26,6 +26,7 @@
     var godownField = picker.dataset.godownField || 'godown_id';
     var requireGodown = picker.dataset.requireGodown === '1';
     var showAvailable = container.dataset.showAvailable === '1';
+    var showPrice = container.dataset.showPrice === '1';
 
     var nextIndex = parseInt(container.dataset.nextIndex, 10) || 0;
     var request = null;      // in-flight fetch, aborted when the user types again
@@ -58,6 +59,30 @@
 
     function tidy(n) {
         return parseFloat(n).toString();
+    }
+
+    function qtyInput(row) {
+        return row.querySelector('.li-qty input');
+    }
+
+    function priceInput(row) {
+        return row.querySelector('.li-price input');
+    }
+
+    /** Rupees with Indian grouping, matching App\Support\Money::inr(). */
+    function rupees(n) {
+        return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    /** Quantity x price for a row, or null until both are filled in. */
+    function rowAmount(row) {
+        var price = priceInput(row);
+        if (!price || price.value === '') {
+            return null;
+        }
+        var q = parseFloat(qtyInput(row).value);
+        var p = parseFloat(price.value);
+        return isNaN(q) || isNaN(p) ? null : q * p;
     }
 
     /** Reuses the layout's toast container instead of a blocking alert(). */
@@ -97,12 +122,31 @@
         var summary = document.getElementById('lineItemsSummary');
         if (summary) {
             var total = rows().reduce(function (sum, row) {
-                var v = parseFloat(row.querySelector('input[type=number]').value);
+                var v = parseFloat(qtyInput(row).value);
                 return sum + (isNaN(v) ? 0 : v);
             }, 0);
-            summary.textContent = count
+            var text = count
                 ? count + (count === 1 ? ' product' : ' products') + ' · ' + tidy(total.toFixed(3)) + ' total'
                 : 'No products added yet';
+
+            if (showPrice && count) {
+                var value = rows().reduce(function (sum, row) {
+                    return sum + (rowAmount(row) || 0);
+                }, 0);
+                text += ' · ' + rupees(value);
+            }
+
+            summary.textContent = text;
+        }
+
+        if (showPrice) {
+            rows().forEach(function (row) {
+                var slot = row.querySelector('.li-amount strong');
+                var amount = rowAmount(row);
+                if (slot) {
+                    slot.textContent = amount === null ? '—' : rupees(amount);
+                }
+            });
         }
 
         updateSteps();
@@ -264,7 +308,7 @@
         frag.innerHTML = html.trim();
         var row = frag.firstElementChild;
 
-        var qty = row.querySelector('input[type=number]');
+        var qty = qtyInput(row);
         if (showAvailable && typeof sku.available !== 'undefined') {
             qty.max = sku.available;
         }
@@ -280,33 +324,53 @@
         qty.focus();
     }
 
-    /** Returns true when every row holds a usable quantity. */
-    function validate(report) {
+    /**
+     * Returns the first input needing attention, or null when every row holds
+     * a usable quantity (and price, where asked for).
+     *
+     * A missing price is only flagged once that field has been typed in, or on
+     * save ($strict) — otherwise entering a quantity would immediately flag
+     * the empty price box beside it.
+     */
+    function validate(report, strict) {
         var firstBad = null;
 
         rows().forEach(function (row) {
-            var input = row.querySelector('input[type=number]');
+            var input = qtyInput(row);
             var value = parseFloat(input.value);
             var max = parseFloat(input.max);
-            var bad = isNaN(value) || value === 0 || (!isNaN(max) && value > max);
+            var qtyBad = isNaN(value) || value === 0 || (!isNaN(max) && value > max);
+
+            var price = priceInput(row);
+            var priceValue = price ? parseFloat(price.value) : 0;
+            var priceBad = !!price && (price.value === '' || isNaN(priceValue) || priceValue < 0);
+            var priceShown = priceBad && report && (strict || price.dataset.touched === '1');
+
             var slot = row.querySelector('.li-error');
+            var messages = [];
 
-            input.classList.toggle('is-invalid', !!(bad && report));
-            row.classList.toggle('line-item-invalid', !!(bad && report));
+            input.classList.toggle('is-invalid', !!(qtyBad && report));
+            if (price) {
+                price.classList.toggle('is-invalid', !!priceShown);
+            }
+            row.classList.toggle('line-item-invalid', !!((qtyBad && report) || priceShown));
 
-            if (slot) {
-                if (bad && report) {
-                    slot.textContent = isNaN(value) || value === 0
-                        ? 'Enter a quantity.'
-                        : 'Only ' + tidy(max) + ' available.';
-                    slot.hidden = false;
-                } else {
-                    slot.hidden = true;
-                }
+            if (qtyBad && report) {
+                messages.push(isNaN(value) || value === 0
+                    ? 'Enter a quantity.'
+                    : 'Only ' + tidy(max) + ' available.');
+            }
+            if (priceShown) {
+                messages.push(priceValue < 0 ? 'Price cannot be negative.' : 'Enter the price per unit.');
             }
 
-            if (bad && !firstBad) {
-                firstBad = input;
+            if (slot) {
+                slot.textContent = messages.join(' ');
+                slot.hidden = messages.length === 0;
+            }
+
+            if (!firstBad && (qtyBad || priceBad)) {
+                firstBad = qtyBad ? input : price;
             }
         });
 
@@ -355,6 +419,7 @@
 
     container.addEventListener('input', function (e) {
         if (e.target.matches('input[type=number]')) {
+            e.target.dataset.touched = '1';
             validate(true);
             refreshState();
         }
@@ -387,12 +452,12 @@
                 toast('Add at least one product before saving.', 'warning');
                 return;
             }
-            var bad = validate(true);
+            var bad = validate(true, true);
             if (bad) {
                 e.preventDefault();
                 bad.focus();
                 bad.scrollIntoView({ block: 'center', behavior: 'smooth' });
-                toast('Check the highlighted quantities.', 'warning');
+                toast(showPrice ? 'Check the highlighted quantities and prices.' : 'Check the highlighted quantities.', 'warning');
                 return;
             }
             submitting = true;

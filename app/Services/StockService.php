@@ -143,6 +143,53 @@ class StockService
         return ['godowns' => $godowns, 'rows' => $rows];
     }
 
+    /**
+     * Weighted average purchase price per SKU, from every priced receipt.
+     *
+     * Each batch counts in proportion to its quantity: 10 @ 100 then 30 @ 120
+     * averages 115, not 110. Receipts recorded before prices were captured are
+     * skipped. With a date, only receipts on or before it count, so the Stock
+     * screen's "as at" view shows the price as it stood then.
+     *
+     * Returns [skuId => ['average' => float, 'quantity' => float, 'receipts' => int]].
+     */
+    public function averagePrices(array $skuIds, ?string $date = null): array
+    {
+        if ($skuIds === []) {
+            return [];
+        }
+
+        $rows = DB::table('grn_items')
+            ->join('grns', 'grns.id', '=', 'grn_items.grn_id')
+            ->whereIn('grn_items.sku_id', $skuIds)
+            ->whereNotNull('grn_items.unit_price')
+            ->when($date, fn ($q) => $q->where('grns.receipt_date', '<=', $date . ' 23:59:59'))
+            ->groupBy('grn_items.sku_id')
+            ->selectRaw('grn_items.sku_id,
+                SUM(grn_items.quantity * grn_items.unit_price) AS total_amount,
+                SUM(grn_items.quantity) AS total_quantity,
+                COUNT(DISTINCT grn_items.grn_id) AS receipts')
+            ->get();
+
+        $prices = [];
+
+        foreach ($rows as $row) {
+            $quantity = (float) $row->total_quantity;
+
+            if ($quantity <= 0) {
+                continue;
+            }
+
+            $prices[$row->sku_id] = [
+                'average' => (float) $row->total_amount / $quantity,
+                'quantity' => $quantity,
+                'receipts' => (int) $row->receipts,
+            ];
+        }
+
+        return $prices;
+    }
+
     public function getAvailable(int $skuId, int $godownId): float
     {
         $record = StockRecord::where('sku_id', $skuId)

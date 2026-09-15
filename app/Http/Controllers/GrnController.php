@@ -68,6 +68,7 @@ class GrnController extends Controller
                         'grn_id' => $grn->id,
                         'sku_id' => $item['sku_id'],
                         'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
                     ]);
                 }
 

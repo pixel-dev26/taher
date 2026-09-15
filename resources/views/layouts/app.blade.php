@@ -325,6 +325,10 @@
            button lines up with the input rather than the label above it. */
         .line-item .li-controls { display: flex; align-items: flex-end; gap: 0.5rem; flex: 0 1 260px; }
         .line-item .li-qty { flex: 1 1 auto; min-width: 0; }
+        /* Receipts ask for a price too, so the controls need room for two fields */
+        .line-items-priced .line-item .li-controls { flex-basis: 420px; }
+        .line-item .li-qty, .line-item .li-price { flex: 1 1 0; min-width: 0; }
+        .line-item .li-amount strong { color: var(--text-dark); }
         .line-item .cl-label {
             display: block; margin-bottom: 0.2rem; font-size: 0.68rem; text-transform: uppercase;
             color: var(--text-muted); font-weight: 700; letter-spacing: 0.3px;

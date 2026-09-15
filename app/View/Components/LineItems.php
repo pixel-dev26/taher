@@ -26,6 +26,8 @@ class LineItems extends Component
         /** Adjustments allow negative quantities to remove stock. */
         public bool $allowNegative = false,
         public string $qtyLabel = 'Quantity',
+        /** Ask for a price per unit on each row (stock receipts). */
+        public bool $showPrice = false,
         /** Existing rows to fall back on when there is no old input (edit forms). */
         public array $items = [],
     ) {
@@ -81,6 +83,7 @@ class LineItems extends Component
                 'index' => $index,
                 'sku' => $sku,
                 'quantity' => $item['quantity'] ?? null,
+                'unit_price' => $item['unit_price'] ?? null,
                 'available' => $record
                     ? (float) $record->on_hand - (float) $record->reserved
                     : null,

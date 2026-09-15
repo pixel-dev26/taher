@@ -19,8 +19,10 @@ class StockAsOnDateExport implements FromArray, WithHeadings
 
         // Same figures as the on-screen report — see StockService::stockAsOnDate,
         // which replaced the per SKU/godown query pair this used to run.
-        $result = app(StockService::class)->stockAsOnDate($date, $godownId ? (int) $godownId : null);
+        $stockService = app(StockService::class);
+        $result = $stockService->stockAsOnDate($date, $godownId ? (int) $godownId : null);
         $godowns = $result['godowns']->keyBy('id');
+        $prices = $stockService->averagePrices(array_map(fn ($entry) => $entry['sku']->id, $result['rows']), $date);
 
         $rows = [];
 
@@ -38,6 +40,7 @@ class StockAsOnDateExport implements FromArray, WithHeadings
                         $figures['on_hand'],
                         $figures['reserved'],
                         $figures['available'],
+                        isset($prices[$sku->id]) ? round($prices[$sku->id]['average'], 2) : null,
                     ];
                 }
             }
@@ -48,6 +51,6 @@ class StockAsOnDateExport implements FromArray, WithHeadings
 
     public function headings(): array
     {
-        return ['SKU Code', 'Product', 'Category', 'UoM', 'Godown', 'On-Hand', 'Reserved', 'Available'];
+        return ['SKU Code', 'Product', 'Category', 'UoM', 'Godown', 'On-Hand', 'Reserved', 'Available', 'Avg. Price (₹)'];
     }
 }

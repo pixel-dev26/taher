@@ -48,10 +48,19 @@
 
         <hr class="section-divider">
         <h6 class="mb-3">Products Received</h6>
+        @php
+            // Receipts recorded before prices were captured keep their old layout.
+            $priced = $grn->items->whereNotNull('unit_price')->isNotEmpty();
+        @endphp
         <div class="table-responsive">
             <table class="table table-stack table-bordered mb-0">
                 <thead>
-                    <tr><th>#</th><th>Product Code</th><th>Product Name</th><th class="text-end">Quantity</th><th>Unit</th></tr>
+                    <tr>
+                        <th>#</th><th>Product Code</th><th>Product Name</th><th class="text-end">Quantity</th><th>Unit</th>
+                        @if($priced)
+                            <th class="text-end">Price / Unit</th><th class="text-end">Amount</th>
+                        @endif
+                    </tr>
                 </thead>
                 <tbody>
                     @foreach($grn->items as $i => $item)
@@ -59,16 +68,24 @@
                         <td>{{ $i + 1 }}</td>
                         <td><code>{{ $item->sku->code }}</code></td>
                         <td>{{ $item->sku->name }}</td>
-                        <td class="text-end fw-bold text-success">+{{ number_format($item->quantity, $item->quantity == intval($item->quantity) ? 0 : 3) }}</td>
-                        <td>{{ $item->sku->unit_of_measure }}</td>
+                        <td class="text-end fw-bold text-success" data-label="Quantity">+{{ number_format($item->quantity, $item->quantity == intval($item->quantity) ? 0 : 3) }}</td>
+                        <td data-label="Unit">{{ $item->sku->unit_of_measure }}</td>
+                        @if($priced)
+                            <td class="text-end" data-label="Price / Unit">{{ \App\Support\Money::inr($item->unit_price === null ? null : (float) $item->unit_price) }}</td>
+                            <td class="text-end fw-semibold" data-label="Amount">{{ \App\Support\Money::inr($item->amount) }}</td>
+                        @endif
                     </tr>
                     @endforeach
                 </tbody>
                 <tfoot>
                     <tr style="background:#F0FFF5;">
                         <td colspan="3" class="fw-bold">Total Received</td>
-                        <td class="text-end fw-bold text-success">+{{ number_format($grn->items->sum('quantity'), 0) }}</td>
+                        <td class="text-end fw-bold text-success" data-label="Quantity">+{{ number_format($grn->items->sum('quantity'), 0) }}</td>
                         <td></td>
+                        @if($priced)
+                            <td></td>
+                            <td class="text-end fw-bold" data-label="Total Amount">{{ \App\Support\Money::inr($grn->items->sum(fn ($item) => $item->amount ?? 0)) }}</td>
+                        @endif
                     </tr>
                 </tfoot>
             </table>

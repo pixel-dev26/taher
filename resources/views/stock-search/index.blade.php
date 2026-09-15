@@ -80,6 +80,7 @@
                         <th class="text-end">Available</th>
                         <th class="text-end">On-hand</th>
                         <th class="text-end">Reserved</th>
+                        <th class="text-end" title="Average purchase price per unit, weighted by the quantity in each stock receipt">Avg. Price</th>
                         <th>Category</th>
                         <th>Unit</th>
                         @foreach($columns as $g)
@@ -110,6 +111,7 @@
                             <td class="text-end fw-bold {{ $tone }}">{{ number_format($avail, 0) }}</td>
                             <td class="text-end">{{ number_format($onHand, 0) }}</td>
                             <td class="text-end">{{ number_format($reserved, 0) }}</td>
+                            <td class="text-end {{ isset($prices[$sku->id]) ? '' : 'text-muted' }}">{{ \App\Support\Money::inr($prices[$sku->id]['average'] ?? null) }}</td>
                             <td>{{ $sku->category }}</td>
                             <td>{{ $sku->unit_of_measure }}</td>
                             @foreach($columns as $g)
@@ -147,6 +149,9 @@
                             <code>{{ $sku->code }}</code>
                             <div class="fw-semibold">{{ $sku->name }}</div>
                             <div class="cl-label mt-1">{{ $sku->category }}</div>
+                            @isset($prices[$sku->id])
+                                <div class="cl-label mt-1">Avg. price <span class="cl-value">{{ \App\Support\Money::inr($prices[$sku->id]['average']) }}</span></div>
+                            @endisset
                         </div>
                         <div class="text-end flex-shrink-0">
                             <div class="cl-hero {{ $tone }}">{{ number_format($avail, 0) }}</div>

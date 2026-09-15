@@ -12,18 +12,20 @@
     button centres against the whole block and floats above the input.
 --}}
 <div id="lineItems"
-     class="line-items"
+     class="line-items @if($showPrice) line-items-priced @endif"
      data-next-index="{{ $nextIndex }}"
      data-show-available="{{ $showAvailable ? '1' : '0' }}"
-     data-allow-negative="{{ $allowNegative ? '1' : '0' }}">
+     data-allow-negative="{{ $allowNegative ? '1' : '0' }}"
+     data-show-price="{{ $showPrice ? '1' : '0' }}">
 
     @foreach($rows as $row)
         @php
             $i = $row['index'];
             $sku = $row['sku'];
             $avail = $row['available'];
+            $rowInvalid = $errors->has("items.{$i}.quantity") || ($showPrice && $errors->has("items.{$i}.unit_price"));
         @endphp
-        <div class="line-item @error("items.{$i}.quantity") line-item-invalid @enderror"
+        <div class="line-item @if($rowInvalid) line-item-invalid @endif"
              id="item-row-{{ $i }}"
              data-sku-id="{{ $sku->id }}">
 
@@ -34,6 +36,9 @@
                 <div class="li-name">{{ $sku->name }}</div>
                 @if($showAvailable && $avail !== null)
                     <div class="li-avail">Available: <strong>{{ rtrim(rtrim(number_format($avail, 3, '.', ''), '0'), '.') }}</strong> {{ $sku->unit_of_measure }}</div>
+                @endif
+                @if($showPrice)
+                    <div class="li-avail li-amount">Amount: <strong>—</strong></div>
                 @endif
             </div>
 
@@ -54,14 +59,34 @@
                     </div>
                 </div>
 
+                @if($showPrice)
+                    <div class="li-price">
+                        <label class="cl-label" for="price-{{ $i }}">Price / {{ $sku->unit_of_measure }}</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₹</span>
+                            <input type="number"
+                                   id="price-{{ $i }}"
+                                   name="items[{{ $i }}][unit_price]"
+                                   class="form-control @error("items.{$i}.unit_price") is-invalid @enderror"
+                                   value="{{ $row['unit_price'] }}"
+                                   step="0.01"
+                                   min="0"
+                                   inputmode="decimal"
+                                   required>
+                        </div>
+                    </div>
+                @endif
+
                 <button type="button" class="btn btn-outline-danger btn-icon li-remove" aria-label="Remove {{ $sku->code }}">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>
 
-            @error("items.{$i}.quantity")
-                <div class="li-error invalid-feedback d-block">{{ $message }}</div>
-            @enderror
+            @if($errors->has("items.{$i}.quantity") || ($showPrice && $errors->has("items.{$i}.unit_price")))
+                <div class="li-error invalid-feedback d-block">
+                    {{ implode(' ', array_merge($errors->get("items.{$i}.quantity"), $showPrice ? $errors->get("items.{$i}.unit_price") : [])) }}
+                </div>
+            @endif
         </div>
     @endforeach
 </div>
@@ -87,6 +112,9 @@
             @if($showAvailable)
                 <div class="li-avail">Available: <strong>__AVAIL__</strong> __UOM__</div>
             @endif
+            @if($showPrice)
+                <div class="li-avail li-amount">Amount: <strong>—</strong></div>
+            @endif
         </div>
 
         <div class="li-controls">
@@ -103,6 +131,23 @@
                     <span class="input-group-text">__UOM__</span>
                 </div>
             </div>
+
+            @if($showPrice)
+                <div class="li-price">
+                    <label class="cl-label" for="price-__I__">Price / __UOM__</label>
+                    <div class="input-group">
+                        <span class="input-group-text">₹</span>
+                        <input type="number"
+                               id="price-__I__"
+                               name="items[__I__][unit_price]"
+                               class="form-control"
+                               step="0.01"
+                               min="0"
+                               inputmode="decimal"
+                               required>
+                    </div>
+                </div>
+            @endif
 
             <button type="button" class="btn btn-outline-danger btn-icon li-remove" aria-label="Remove product">
                 <i class="bi bi-trash"></i>

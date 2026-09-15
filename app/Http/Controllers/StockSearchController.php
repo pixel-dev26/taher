@@ -57,9 +57,10 @@ class StockSearchController extends Controller
         $columns = $godownId ? $godowns->where('id', $godownId) : $godowns;
 
         $figures = $this->stockService->stockFigures($date, $skus->pluck('id')->all());
+        $prices = $this->stockService->averagePrices($skus->pluck('id')->all(), $date);
 
         return view('stock-search.index', compact(
-            'skus', 'godowns', 'columns', 'categories', 'figures',
+            'skus', 'godowns', 'columns', 'categories', 'figures', 'prices',
             'date', 'isToday', 'godownId', 'hideZero'
         ));
     }

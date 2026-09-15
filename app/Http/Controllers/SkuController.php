@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreSkuRequest;
 use App\Http\Requests\UpdateSkuRequest;
 use App\Models\Godown;
+use App\Models\GrnItem;
 use App\Models\Sku;
 use App\Models\StockRecord;
+use App\Services\StockService;
 use Illuminate\Http\Request;
 
 class SkuController extends Controller
@@ -74,13 +76,26 @@ class SkuController extends Controller
         return redirect()->route('skus.index')->with('success', 'SKU created successfully.');
     }
 
-    public function show(Sku $sku)
+    public function show(Sku $sku, StockService $stockService)
     {
         $stockRecords = StockRecord::where('sku_id', $sku->id)
             ->with('godown')
             ->get();
 
-        return view('skus.show', compact('sku', 'stockRecords'));
+        $price = $stockService->averagePrices([$sku->id])[$sku->id] ?? null;
+
+        // The receipts behind the average, newest first.
+        $purchases = GrnItem::select('grn_items.*')
+            ->join('grns', 'grns.id', '=', 'grn_items.grn_id')
+            ->where('grn_items.sku_id', $sku->id)
+            ->whereNotNull('grn_items.unit_price')
+            ->with('grn.godown')
+            ->orderByDesc('grns.receipt_date')
+            ->orderByDesc('grn_items.id')
+            ->limit(10)
+            ->get();
+
+        return view('skus.show', compact('sku', 'stockRecords', 'price', 'purchases'));
     }
 
     public function edit(Sku $sku)

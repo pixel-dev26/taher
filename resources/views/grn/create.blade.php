@@ -72,7 +72,7 @@
 
             <x-sku-picker placeholder="Type product name or code to add..." />
 
-            <x-line-items qty-label="Quantity" />
+            <x-line-items qty-label="Quantity" :show-price="true" />
 
             {{-- Section 3: Save --}}
             <div class="form-action-bar">
