@@ -21,14 +21,18 @@
                             @if($price)
                                 <span class="fw-bold">{{ \App\Support\Money::inr($price['average']) }}</span> / {{ $sku->unit_of_measure }}
                                 <div class="small text-muted">
-                                    Across {{ rtrim(rtrim(number_format($price['quantity'], 3, '.', ','), '0'), '.') }} {{ $sku->unit_of_measure }}
-                                    in {{ $price['receipts'] }} {{ Str::plural('receipt', $price['receipts']) }}
+                                    @if($price['quantity'] > 0)
+                                        Across {{ rtrim(rtrim(number_format($price['quantity'], 3, '.', ','), '0'), '.') }} {{ $sku->unit_of_measure }} brought in
+                                    @else
+                                        Product price — no stock brought in yet
+                                    @endif
                                 </div>
                             @else
-                                <span class="text-muted">No price yet — it appears once stock is received with a price</span>
+                                <span class="text-muted">No price yet — set one on this product, or enter it when stock comes in</span>
                             @endif
                         </td>
                     </tr>
+                    <tr><th>Product Price</th><td>{{ \App\Support\Money::inr($sku->price === null ? null : (float) $sku->price) }}</td></tr>
                     <tr><th>Low Stock Threshold</th><td>{{ $sku->low_stock_threshold }}</td></tr>
                     <tr><th>HSN Code</th><td>{{ $sku->hsn_code ?? '-' }}</td></tr>
                     <tr><th>Status</th><td><span class="badge {{ $sku->is_active ? 'bg-success' : 'bg-danger' }}">{{ $sku->is_active ? 'Active' : 'Inactive' }}</span></td></tr>
@@ -82,35 +86,50 @@
 <div class="row">
     <div class="col-12">
         <div class="card mt-4">
-            <div class="card-header"><h5 class="mb-0"><i class="bi bi-currency-rupee"></i> Purchase Prices</h5></div>
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-currency-rupee"></i> Price History</h5></div>
             <div class="card-body p-0">
                 @if($purchases->isNotEmpty())
                 <div class="table-responsive">
                     <table class="table table-stack table-bordered mb-0">
                         <thead>
-                            <tr><th>Date</th><th>Receipt</th><th class="text-end">Quantity</th><th class="text-end">Price / Unit</th><th class="text-end">Amount</th></tr>
+                            <tr><th>Date</th><th>Stock In</th><th class="text-end">Quantity</th><th class="text-end">Price / Unit</th><th class="text-end">Amount</th></tr>
                         </thead>
                         <tbody>
-                            @foreach($purchases as $item)
+                            @foreach($purchases as $line)
+                            @php
+                                $quantity = (float) $line->quantity;
+                                // A line without its own price is valued at the product price.
+                                $unitPrice = $line->unit_price ?? $sku->price;
+                            @endphp
                             <tr>
-                                <td data-label="Date">{{ $item->grn->receipt_date->format('d M Y') }}</td>
-                                <td data-label="Receipt">
-                                    <a href="{{ route('grn.show', $item->grn) }}">{{ $item->grn->grn_number }}</a>
-                                    <div class="small text-muted">{{ $item->grn->godown->code }}</div>
+                                <td data-label="Date">{{ \Carbon\Carbon::parse($line->moved_at)->format('d M Y') }}</td>
+                                <td data-label="Stock In">
+                                    @if($line->source === 'grn')
+                                        <a href="{{ route('grn.show', $line->document_id) }}">{{ $line->document_number }}</a>
+                                        <div class="small text-muted">Receipt · {{ $godownCodes[$line->godown_id] ?? '' }}</div>
+                                    @else
+                                        <a href="{{ route('stock-adjustments.show', $line->document_id) }}">{{ $line->document_number }}</a>
+                                        <div class="small text-muted">Correction · {{ $godownCodes[$line->godown_id] ?? '' }}</div>
+                                    @endif
                                 </td>
-                                <td class="text-end" data-label="Quantity">{{ number_format($item->quantity, $item->quantity == intval($item->quantity) ? 0 : 3) }}</td>
-                                <td class="text-end" data-label="Price / Unit">{{ \App\Support\Money::inr((float) $item->unit_price) }}</td>
-                                <td class="text-end fw-semibold" data-label="Amount">{{ \App\Support\Money::inr($item->amount) }}</td>
+                                <td class="text-end" data-label="Quantity">{{ number_format($quantity, $quantity == intval($quantity) ? 0 : 3) }}</td>
+                                <td class="text-end" data-label="Price / Unit">
+                                    {{ \App\Support\Money::inr($unitPrice === null ? null : (float) $unitPrice) }}
+                                    @if($line->unit_price === null && $unitPrice !== null)
+                                        <div class="small text-muted">product price</div>
+                                    @endif
+                                </td>
+                                <td class="text-end fw-semibold" data-label="Amount">{{ \App\Support\Money::inr($unitPrice === null ? null : $quantity * (float) $unitPrice) }}</td>
                             </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
-                @if($price && $price['receipts'] > $purchases->count())
-                    <div class="small text-muted px-3 py-2">Showing the latest {{ $purchases->count() }} receipt lines. The average uses all of them.</div>
+                @if($purchaseCount > $purchases->count())
+                    <div class="small text-muted px-3 py-2">Showing the latest {{ $purchases->count() }} of {{ $purchaseCount }}. The average uses all of them.</div>
                 @endif
                 @else
-                <x-empty-state icon="bi-currency-rupee" text="No purchase prices recorded">Prices are entered when you receive stock.</x-empty-state>
+                <x-empty-state icon="bi-currency-rupee" text="No stock brought in yet">Prices are entered when you receive stock or add it through a correction.</x-empty-state>
                 @endif
             </div>
         </div>

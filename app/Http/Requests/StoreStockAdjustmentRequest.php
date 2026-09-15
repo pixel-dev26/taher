@@ -23,12 +23,23 @@ class StoreStockAdjustmentRequest extends FormRequest
             'items' => 'required|array|min:1',
             'items.*.sku_id' => 'required|exists:skus,id',
             'items.*.quantity' => 'required|numeric|not_in:0',
+            'items.*.unit_price' => 'nullable|numeric|min:0|max:9999999999',
         ];
     }
 
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
+            // Stock being added needs a price; stock being removed does not.
+            foreach ($this->input('items', []) as $index => $item) {
+                $qty = $item['quantity'] ?? null;
+                $price = $item['unit_price'] ?? null;
+
+                if (is_numeric($qty) && (float) $qty > 0 && ($price === null || $price === '')) {
+                    $validator->errors()->add("items.{$index}.unit_price", 'Enter the price per unit for stock being added.');
+                }
+            }
+
             if ($validator->errors()->any()) return;
 
             $items = $this->input('items', []);

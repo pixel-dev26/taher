@@ -59,12 +59,12 @@
             <h6 class="mb-2">Products to Correct</h6>
             <div class="alert alert-info border-0 py-2 mb-3" style="background: var(--info-soft);">
                 <i class="bi bi-info-circle me-1"></i>
-                Use <strong>positive numbers</strong> to add stock, <strong>negative numbers</strong> (e.g. -5) to remove stock
+                Use <strong>positive numbers</strong> to add stock (with its price per unit), <strong>negative numbers</strong> (e.g. -5) to remove stock
             </div>
 
             <x-sku-picker placeholder="Type product name or code to find it..." />
 
-            <x-line-items allow-negative qty-label="Quantity (+/-)" />
+            <x-line-items allow-negative qty-label="Quantity (+/-)" :show-price="true" />
 
             <div class="form-action-bar">
                 <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Save Correction</button>

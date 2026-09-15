@@ -70,6 +70,8 @@ class StockAdjustmentController extends Controller
                         'stock_adjustment_id' => $adjustment->id,
                         'sku_id' => $item['sku_id'],
                         'quantity' => $item['quantity'],
+                        // Only stock added carries a price; a removal's price box is ignored.
+                        'unit_price' => (float) $item['quantity'] > 0 ? ($item['unit_price'] ?? null) : null,
                     ]);
                 }
 

@@ -38,7 +38,7 @@
         <div class="table-responsive d-desktop-table">
             <table class="table table-bordered table-striped table-hover">
                 <thead>
-                    <tr><th>Code</th><th>Name</th><th>Category</th><th>UoM</th><th>Low Stock</th><th>Status</th><th>Actions</th></tr>
+                    <tr><th>Code</th><th>Name</th><th>Category</th><th>UoM</th><th class="text-end" title="Average price per unit, weighted by quantity brought in">Avg. Price</th><th>Low Stock</th><th>Status</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                     @forelse($skus as $sku)
@@ -47,6 +47,7 @@
                         <td>{{ $sku->name }}</td>
                         <td>{{ $sku->category }}</td>
                         <td>{{ $sku->unit_of_measure }}</td>
+                        <td class="text-end {{ isset($prices[$sku->id]) ? '' : 'text-muted' }}">{{ \App\Support\Money::inr($prices[$sku->id]['average'] ?? null) }}</td>
                         <td>{{ $sku->low_stock_threshold }}</td>
                         <td>
                             <span class="badge {{ $sku->is_active ? 'bg-success' : 'bg-danger' }}">
@@ -61,7 +62,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="7"><x-empty-state icon="bi-box-seam" text="No products found">Try a different search term or clear the filters.</x-empty-state></td></tr>
+                    <tr><td colspan="8"><x-empty-state icon="bi-box-seam" text="No products found">Try a different search term or clear the filters.</x-empty-state></td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -78,6 +79,7 @@
                 <div class="fw-semibold mb-2">{{ $sku->name }}</div>
                 <div class="cl-row"><span class="cl-label">Category</span><span class="cl-value">{{ $sku->category }}</span></div>
                 <div class="cl-row"><span class="cl-label">Unit</span><span class="cl-value">{{ $sku->unit_of_measure }}</span></div>
+                <div class="cl-row"><span class="cl-label">Avg. Price</span><span class="cl-value">{{ \App\Support\Money::inr($prices[$sku->id]['average'] ?? null) }}</span></div>
                 <div class="cl-row mb-2"><span class="cl-label">Low Stock At</span><span class="cl-value">{{ $sku->low_stock_threshold }}</span></div>
                 <div class="d-flex gap-2">
                     <a href="{{ route('skus.show', $sku) }}" class="btn btn-sm btn-outline-primary flex-fill">View</a>

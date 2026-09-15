@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreSkuRequest;
 use App\Http\Requests\UpdateSkuRequest;
 use App\Models\Godown;
-use App\Models\GrnItem;
 use App\Models\Sku;
 use App\Models\StockRecord;
 use App\Services\StockService;
@@ -13,7 +12,7 @@ use Illuminate\Http\Request;
 
 class SkuController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, StockService $stockService)
     {
         $query = Sku::query();
 
@@ -35,8 +34,9 @@ class SkuController extends Controller
 
         $skus = $query->latest()->paginate(20)->withQueryString();
         $categories = Sku::distinct()->pluck('category')->sort();
+        $prices = $stockService->averagePrices($skus->pluck('id')->all());
 
-        return view('skus.index', compact('skus', 'categories'));
+        return view('skus.index', compact('skus', 'categories', 'prices'));
     }
 
     public function create()
@@ -84,18 +84,16 @@ class SkuController extends Controller
 
         $price = $stockService->averagePrices([$sku->id])[$sku->id] ?? null;
 
-        // The receipts behind the average, newest first.
-        $purchases = GrnItem::select('grn_items.*')
-            ->join('grns', 'grns.id', '=', 'grn_items.grn_id')
-            ->where('grn_items.sku_id', $sku->id)
-            ->whereNotNull('grn_items.unit_price')
-            ->with('grn.godown')
-            ->orderByDesc('grns.receipt_date')
-            ->orderByDesc('grn_items.id')
+        // The stock-in lines behind the average, newest first.
+        $purchases = $stockService->stockInLines([$sku->id])
+            ->orderByDesc('moved_at')
+            ->orderByDesc('line_id')
             ->limit(10)
             ->get();
+        $purchaseCount = $stockService->stockInLines([$sku->id])->count();
+        $godownCodes = Godown::pluck('code', 'id');
 
-        return view('skus.show', compact('sku', 'stockRecords', 'price', 'purchases'));
+        return view('skus.show', compact('sku', 'stockRecords', 'price', 'purchases', 'purchaseCount', 'godownCodes'));
     }
 
     public function edit(Sku $sku)

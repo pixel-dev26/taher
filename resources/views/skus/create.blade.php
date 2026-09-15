@@ -47,6 +47,17 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
+                            <label for="price" class="form-label">Price per Unit *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price') }}" step="0.01" min="0" inputmode="decimal" required>
+                                @error('price') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="form-hint">Starting price. Each batch you receive with its own price updates the average.</div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
                             <label for="low_stock_threshold" class="form-label">Low Stock Threshold *</label>
                             <input type="number" class="form-control @error('low_stock_threshold') is-invalid @enderror" id="low_stock_threshold" name="low_stock_threshold" value="{{ old('low_stock_threshold', 10) }}" min="0" required>
                             @error('low_stock_threshold') <div class="invalid-feedback">{{ $message }}</div> @enderror

@@ -144,14 +144,45 @@ class StockService
     }
 
     /**
-     * Weighted average purchase price per SKU, from every priced receipt.
+     * Every line that brought stock in: receipts, plus corrections that added
+     * stock. Transfers only move stock between godowns, so they are left out.
+     *
+     * Columns: sku_id, quantity, unit_price (null if none was entered),
+     * moved_at, source ('grn' | 'adjustment'), document_id, document_number,
+     * godown_id, line_id.
+     */
+    public function stockInLines(array $skuIds): \Illuminate\Database\Query\Builder
+    {
+        $receipts = DB::table('grn_items')
+            ->join('grns', 'grns.id', '=', 'grn_items.grn_id')
+            ->whereIn('grn_items.sku_id', $skuIds)
+            ->selectRaw("grn_items.sku_id, grn_items.quantity, grn_items.unit_price,
+                grns.receipt_date AS moved_at, 'grn' AS source, grns.id AS document_id,
+                grns.grn_number AS document_number, grns.godown_id, grn_items.id AS line_id");
+
+        $additions = DB::table('adjustment_items')
+            ->join('stock_adjustments', 'stock_adjustments.id', '=', 'adjustment_items.stock_adjustment_id')
+            ->whereIn('adjustment_items.sku_id', $skuIds)
+            ->where('adjustment_items.quantity', '>', 0)
+            ->selectRaw("adjustment_items.sku_id, adjustment_items.quantity, adjustment_items.unit_price,
+                stock_adjustments.created_at AS moved_at, 'adjustment' AS source, stock_adjustments.id AS document_id,
+                stock_adjustments.adjustment_number AS document_number, stock_adjustments.godown_id, adjustment_items.id AS line_id");
+
+        return DB::query()->fromSub($receipts->unionAll($additions), 'lines');
+    }
+
+    /**
+     * Weighted average price per SKU across all stock brought in.
      *
      * Each batch counts in proportion to its quantity: 10 @ 100 then 30 @ 120
-     * averages 115, not 110. Receipts recorded before prices were captured are
-     * skipped. With a date, only receipts on or before it count, so the Stock
-     * screen's "as at" view shows the price as it stood then.
+     * averages 115, not 110. A line with no price of its own (opening stock
+     * loaded before prices were tracked) is valued at the product's price, and
+     * a product with no stock in yet shows its product price as-is. Lines with
+     * neither are skipped. With a date, only stock in on or before it counts,
+     * so the Stock screen's "as at" view shows the price as it stood then.
      *
-     * Returns [skuId => ['average' => float, 'quantity' => float, 'receipts' => int]].
+     * Returns [skuId => ['average' => float, 'quantity' => float, 'batches' => int]],
+     * where batches counts lines that carried their own price.
      */
     public function averagePrices(array $skuIds, ?string $date = null): array
     {
@@ -159,16 +190,15 @@ class StockService
             return [];
         }
 
-        $rows = DB::table('grn_items')
-            ->join('grns', 'grns.id', '=', 'grn_items.grn_id')
-            ->whereIn('grn_items.sku_id', $skuIds)
-            ->whereNotNull('grn_items.unit_price')
-            ->when($date, fn ($q) => $q->where('grns.receipt_date', '<=', $date . ' 23:59:59'))
-            ->groupBy('grn_items.sku_id')
-            ->selectRaw('grn_items.sku_id,
-                SUM(grn_items.quantity * grn_items.unit_price) AS total_amount,
-                SUM(grn_items.quantity) AS total_quantity,
-                COUNT(DISTINCT grn_items.grn_id) AS receipts')
+        $rows = $this->stockInLines($skuIds)
+            ->join('skus', 'skus.id', '=', 'lines.sku_id')
+            ->when($date, fn ($q) => $q->where('lines.moved_at', '<=', $date . ' 23:59:59'))
+            ->whereRaw('COALESCE(lines.unit_price, skus.price) IS NOT NULL')
+            ->groupBy('lines.sku_id')
+            ->selectRaw('lines.sku_id,
+                SUM(lines.quantity * COALESCE(lines.unit_price, skus.price)) AS total_amount,
+                SUM(lines.quantity) AS total_quantity,
+                COUNT(lines.unit_price) AS batches')
             ->get();
 
         $prices = [];
@@ -183,8 +213,17 @@ class StockService
             $prices[$row->sku_id] = [
                 'average' => (float) $row->total_amount / $quantity,
                 'quantity' => $quantity,
-                'receipts' => (int) $row->receipts,
+                'batches' => (int) $row->batches,
             ];
+        }
+
+        // Nothing priced has come in yet: fall back to the product's own price.
+        $fallback = Sku::whereIn('id', array_diff($skuIds, array_keys($prices)))
+            ->whereNotNull('price')
+            ->pluck('price', 'id');
+
+        foreach ($fallback as $id => $price) {
+            $prices[$id] = ['average' => (float) $price, 'quantity' => 0.0, 'batches' => 0];
         }
 
         return $prices;

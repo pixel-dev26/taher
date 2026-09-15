@@ -24,6 +24,8 @@
             $sku = $row['sku'];
             $avail = $row['available'];
             $rowInvalid = $errors->has("items.{$i}.quantity") || ($showPrice && $errors->has("items.{$i}.unit_price"));
+            // Stock being removed (a negative correction) takes no price.
+            $removing = is_numeric($row['quantity']) && (float) $row['quantity'] < 0;
         @endphp
         <div class="line-item @if($rowInvalid) line-item-invalid @endif"
              id="item-row-{{ $i }}"
@@ -38,7 +40,7 @@
                     <div class="li-avail">Available: <strong>{{ rtrim(rtrim(number_format($avail, 3, '.', ''), '0'), '.') }}</strong> {{ $sku->unit_of_measure }}</div>
                 @endif
                 @if($showPrice)
-                    <div class="li-avail li-amount">Amount: <strong>—</strong></div>
+                    <div class="li-avail li-amount" @if($removing) hidden @endif>Amount: <strong>—</strong></div>
                 @endif
             </div>
 
@@ -60,7 +62,7 @@
                 </div>
 
                 @if($showPrice)
-                    <div class="li-price">
+                    <div class="li-price" @if($removing) hidden @endif>
                         <label class="cl-label" for="price-{{ $i }}">Price / {{ $sku->unit_of_measure }}</label>
                         <div class="input-group">
                             <span class="input-group-text">₹</span>
@@ -72,6 +74,7 @@
                                    step="0.01"
                                    min="0"
                                    inputmode="decimal"
+                                   @if($removing) disabled @endif
                                    required>
                         </div>
                     </div>
@@ -94,7 +97,13 @@
 <div id="noItemsHint" class="empty-state" @if(count($rows)) style="display:none;" @endif>
     <i class="bi bi-inbox"></i>
     <div class="empty-text">No products added yet</div>
-    <div class="empty-hint">Use the search box above to find and add products</div>
+    <div class="empty-hint">
+        @if($showPrice)
+            Use the search box above to add products — you'll enter the quantity and price for each
+        @else
+            Use the search box above to find and add products
+        @endif
+    </div>
 </div>
 
 @error('items')

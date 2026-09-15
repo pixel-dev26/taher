@@ -74,15 +74,39 @@
         return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
+    /** A negative correction removes stock, which takes no price. */
+    function isRemoving(row) {
+        return parseFloat(qtyInput(row).value) < 0;
+    }
+
     /** Quantity x price for a row, or null until both are filled in. */
     function rowAmount(row) {
         var price = priceInput(row);
-        if (!price || price.value === '') {
+        if (!price || price.value === '' || isRemoving(row)) {
             return null;
         }
         var q = parseFloat(qtyInput(row).value);
         var p = parseFloat(price.value);
         return isNaN(q) || isNaN(p) ? null : q * p;
+    }
+
+    /**
+     * Hide the price box while a row removes stock. Disabling it as well keeps
+     * the browser's required-field check from blocking the save on a field
+     * the user cannot see.
+     */
+    function syncPrice(row) {
+        var price = priceInput(row);
+        if (!price) {
+            return;
+        }
+        var removing = isRemoving(row);
+        price.closest('.li-price').hidden = removing;
+        price.disabled = removing;
+        var amount = row.querySelector('.li-amount');
+        if (amount) {
+            amount.hidden = removing;
+        }
     }
 
     /** Reuses the layout's toast container instead of a blocking alert(). */
@@ -141,6 +165,7 @@
 
         if (showPrice) {
             rows().forEach(function (row) {
+                syncPrice(row);
                 var slot = row.querySelector('.li-amount strong');
                 var amount = rowAmount(row);
                 if (slot) {
@@ -343,7 +368,7 @@
 
             var price = priceInput(row);
             var priceValue = price ? parseFloat(price.value) : 0;
-            var priceBad = !!price && (price.value === '' || isNaN(priceValue) || priceValue < 0);
+            var priceBad = !!price && !(value < 0) && (price.value === '' || isNaN(priceValue) || priceValue < 0);
             var priceShown = priceBad && report && (strict || price.dataset.touched === '1');
 
             var slot = row.querySelector('.li-error');

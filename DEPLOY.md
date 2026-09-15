@@ -77,7 +77,7 @@ php artisan migrate --force
 php artisan view:clear
 ```
 
-The purchase-price change (Sept 2026) needs this migration before the new
+The price changes (Sept 2026) need these migrations before the new
 code runs. Without it, saving a stock receipt and opening the Stock screen
 will fail.
 

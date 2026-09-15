@@ -52,22 +52,45 @@ $reasonLabels = [
 
         <hr class="section-divider">
         <h6 class="mb-3">Products Adjusted</h6>
+        @php
+            // Corrections recorded before prices were captured keep their old layout.
+            $priced = $stockAdjustment->items->whereNotNull('unit_price')->isNotEmpty();
+        @endphp
         <div class="table-responsive">
             <table class="table table-stack table-bordered mb-0">
-                <thead><tr><th>#</th><th>Product Code</th><th>Product Name</th><th class="text-end">Change</th><th>Unit</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>#</th><th>Product Code</th><th>Product Name</th><th class="text-end">Change</th><th>Unit</th>
+                        @if($priced)
+                            <th class="text-end">Price / Unit</th><th class="text-end">Amount</th>
+                        @endif
+                    </tr>
+                </thead>
                 <tbody>
                     @foreach($stockAdjustment->items as $i => $item)
                     <tr class="{{ $item->quantity < 0 ? 'row-stock-critical' : '' }}" style="{{ $item->quantity >= 0 ? 'background:#F0FFF5;' : '' }}">
                         <td>{{ $i+1 }}</td>
                         <td><code>{{ $item->sku->code }}</code></td>
                         <td>{{ $item->sku->name }}</td>
-                        <td class="text-end fw-bold {{ $item->quantity >= 0 ? 'text-success' : 'text-danger' }}">
+                        <td class="text-end fw-bold {{ $item->quantity >= 0 ? 'text-success' : 'text-danger' }}" data-label="Change">
                             {{ $item->quantity >= 0 ? '+' : '' }}{{ number_format($item->quantity, 0) }}
                         </td>
-                        <td>{{ $item->sku->unit_of_measure }}</td>
+                        <td data-label="Unit">{{ $item->sku->unit_of_measure }}</td>
+                        @if($priced)
+                            <td class="text-end" data-label="Price / Unit">{{ \App\Support\Money::inr($item->unit_price === null ? null : (float) $item->unit_price) }}</td>
+                            <td class="text-end fw-semibold" data-label="Amount">{{ \App\Support\Money::inr($item->amount) }}</td>
+                        @endif
                     </tr>
                     @endforeach
                 </tbody>
+                @if($priced)
+                <tfoot>
+                    <tr style="background:#F0FFF5;">
+                        <td colspan="6" class="fw-bold">Value of Stock Added</td>
+                        <td class="text-end fw-bold" data-label="Total Amount">{{ \App\Support\Money::inr($stockAdjustment->items->sum(fn ($item) => $item->amount ?? 0)) }}</td>
+                    </tr>
+                </tfoot>
+                @endif
             </table>
         </div>
     </div>

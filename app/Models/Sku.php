@@ -11,13 +11,14 @@ class Sku extends Model
 
     protected $fillable = [
         'code', 'name', 'category', 'variant_attributes',
-        'unit_of_measure', 'low_stock_threshold', 'hsn_code', 'is_active',
+        'unit_of_measure', 'price', 'low_stock_threshold', 'hsn_code', 'is_active',
     ];
 
     protected function casts(): array
     {
         return [
             'variant_attributes' => 'array',
+            'price' => 'decimal:2',
             'is_active' => 'boolean',
             'low_stock_threshold' => 'integer',
         ];

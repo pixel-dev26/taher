@@ -44,6 +44,17 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
+                            <label for="price" class="form-label">Price per Unit</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price', $sku->price) }}" step="0.01" min="0" inputmode="decimal">
+                                @error('price') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="form-hint">Used for stock that has no price of its own, like opening stock. Batches received with a price are averaged in by quantity.</div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
                             <label for="low_stock_threshold" class="form-label">Low Stock Threshold *</label>
                             <input type="number" class="form-control" id="low_stock_threshold" name="low_stock_threshold" value="{{ old('low_stock_threshold', $sku->low_stock_threshold) }}" min="0" required>
                         </div>

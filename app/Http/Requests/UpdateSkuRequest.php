@@ -22,6 +22,8 @@ class UpdateSkuRequest extends FormRequest
             'unit_of_measure' => 'required|string|max:20',
             'low_stock_threshold' => 'required|integer|min:0',
             'hsn_code' => 'nullable|string|max:20',
+            // Optional here: most existing products were created before prices.
+            'price' => 'nullable|numeric|min:0|max:9999999999',
             'is_active' => 'boolean',
         ];
     }
