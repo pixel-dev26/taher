@@ -101,10 +101,10 @@
     <div class="card-body">
         <h6 class="fw-bold mb-3"><i class="bi bi-hand-index me-1"></i> What would you like to do?</h6>
         <div class="d-flex gap-3 flex-wrap">
-            <button type="button" class="btn-primary" data-bs-toggle="modal" data-bs-target="#acceptModal">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#acceptModal">
                 <i class="bi bi-check-lg me-1"></i> Accept Transfer
             </button>
-            <button type="button" class="btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
                 <i class="bi bi-x-lg me-1"></i> Reject Transfer
             </button>
         </div>
@@ -126,7 +126,7 @@
                 <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
                 <form method="POST" action="{{ route('stock-transfers.accept', $stockTransfer) }}">
                     @csrf @method('PATCH')
-                    <button type="submit" class="btn-primary">
+                    <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-lg me-1"></i> Yes, Accept
                     </button>
                 </form>
@@ -150,7 +150,7 @@
                 <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
                 <form method="POST" action="{{ route('stock-transfers.reject', $stockTransfer) }}">
                     @csrf @method('PATCH')
-                    <button type="submit" class="btn-danger">
+                    <button type="submit" class="btn btn-danger">
                         <i class="bi bi-x-lg me-1"></i> Yes, Reject
                     </button>
                 </form>
