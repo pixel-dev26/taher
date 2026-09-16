@@ -100,11 +100,18 @@ class DispatchSheetController extends Controller
                     'status' => 'pending',
                     'created_by' => auth()->id(),
                     'customer_name' => $request->customer_name,
+                    'customer_phone' => $request->customer_phone,
+                    'customer_gstin' => $request->customer_gstin,
+                    'place_of_supply' => $request->place_of_supply,
                     'delivery_address' => $request->delivery_address,
                     'delivery_date' => $request->delivery_date,
                     'vehicle_no' => $request->vehicle_no,
                     'driver_name' => $request->driver_name,
                     'driver_phone' => $request->driver_phone,
+                    'lr_no' => $request->lr_no,
+                    'eway_no' => $request->eway_no,
+                    'transport_name' => $request->transport_name,
+                    'transport_id' => $request->transport_id,
                     'notes' => $request->notes,
                 ]);
 
@@ -113,6 +120,7 @@ class DispatchSheetController extends Controller
                         'dispatch_sheet_id' => $sheet->id,
                         'sku_id' => $item['sku_id'],
                         'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
                     ]);
                 }
 
@@ -161,11 +169,18 @@ class DispatchSheetController extends Controller
 
                 $dispatchSheet->update([
                     'customer_name' => $request->customer_name,
+                    'customer_phone' => $request->customer_phone,
+                    'customer_gstin' => $request->customer_gstin,
+                    'place_of_supply' => $request->place_of_supply,
                     'delivery_address' => $request->delivery_address,
                     'delivery_date' => $request->delivery_date,
                     'vehicle_no' => $request->vehicle_no,
                     'driver_name' => $request->driver_name,
                     'driver_phone' => $request->driver_phone,
+                    'lr_no' => $request->lr_no,
+                    'eway_no' => $request->eway_no,
+                    'transport_name' => $request->transport_name,
+                    'transport_id' => $request->transport_id,
                     'notes' => $request->notes,
                 ]);
 
@@ -176,6 +191,7 @@ class DispatchSheetController extends Controller
                         'dispatch_sheet_id' => $dispatchSheet->id,
                         'sku_id' => $item['sku_id'],
                         'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
                     ]);
                 }
 
@@ -227,16 +243,29 @@ class DispatchSheetController extends Controller
 
     public function downloadPdf(DispatchSheet $dispatchSheet)
     {
-        if (!$dispatchSheet->pdf_path) {
-            // Generate on the fly
-            $this->pdfService->generateDispatchPdf($dispatchSheet);
-            $dispatchSheet->refresh();
-        }
+        // Always regenerate rather than reusing the stored file: the sheet's
+        // status, dispatch timestamp, or cancellation reason can all change
+        // after the PDF was first generated (on create/edit), and a cached
+        // file would otherwise go stale — e.g. still showing "Pending" on a
+        // sheet that has since been sent out or cancelled.
+        $this->pdfService->generateDispatchPdf($dispatchSheet);
+        $dispatchSheet->refresh();
 
         if (!Storage::disk('public')->exists($dispatchSheet->pdf_path)) {
             abort(404, 'PDF not found.');
         }
 
         return Storage::disk('public')->download($dispatchSheet->pdf_path, "{$dispatchSheet->ds_number}.pdf");
+    }
+
+    /**
+     * A GST-compliant Road/Delivery Challan for this dispatch — a separate
+     * document from the plain Dispatch Sheet PDF above, generated fresh on
+     * every download rather than cached to disk.
+     */
+    public function downloadChallan(DispatchSheet $dispatchSheet)
+    {
+        return $this->pdfService->generateChallanPdf($dispatchSheet)
+            ->download("{$dispatchSheet->ds_number}-challan.pdf");
     }
 }

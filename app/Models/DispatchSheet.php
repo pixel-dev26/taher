@@ -11,8 +11,10 @@ class DispatchSheet extends Model
 
     protected $fillable = [
         'ds_number', 'godown_id', 'status', 'created_by', 'customer_name',
+        'customer_phone', 'customer_gstin', 'place_of_supply',
         'delivery_address', 'delivery_date', 'dispatched_at', 'dispatched_by',
-        'vehicle_no', 'driver_name', 'driver_phone', 'notes',
+        'vehicle_no', 'driver_name', 'driver_phone',
+        'lr_no', 'eway_no', 'transport_name', 'transport_id', 'notes',
         'cancel_reason', 'cancelled_at', 'pdf_path',
     ];
 

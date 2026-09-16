@@ -9,11 +9,20 @@ class DispatchSheetItem extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['dispatch_sheet_id', 'sku_id', 'quantity'];
+    protected $fillable = ['dispatch_sheet_id', 'sku_id', 'quantity', 'unit_price'];
 
     protected function casts(): array
     {
-        return ['quantity' => 'decimal:3'];
+        return [
+            'quantity' => 'decimal:3',
+            'unit_price' => 'decimal:2',
+        ];
+    }
+
+    /** Quantity x price, or null for lines recorded before prices were captured. */
+    public function getAmountAttribute(): ?float
+    {
+        return $this->unit_price === null ? null : (float) $this->quantity * (float) $this->unit_price;
     }
 
     public function dispatchSheet()

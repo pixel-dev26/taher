@@ -17,7 +17,9 @@ class SettingController extends Controller
             'company_phone' => Setting::get('company_phone', ''),
             'company_fax' => Setting::get('company_fax', ''),
             'company_email' => Setting::get('company_email', ''),
+            'company_gstin' => Setting::get('company_gstin', ''),
             'default_low_stock_threshold' => Setting::get('default_low_stock_threshold', 10),
+            'default_gst_rate' => Setting::get('default_gst_rate', 18),
         ];
 
         return view('settings.edit', compact('settings'));
@@ -32,7 +34,9 @@ class SettingController extends Controller
             'company_phone' => 'nullable|string|max:100',
             'company_fax' => 'nullable|string|max:100',
             'company_email' => 'nullable|email|max:255',
+            'company_gstin' => 'nullable|string|max:20',
             'default_low_stock_threshold' => 'nullable|integer|min:0',
+            'default_gst_rate' => 'nullable|numeric|min:0|max:100',
         ]);
 
         $userId = auth()->id();
@@ -42,7 +46,9 @@ class SettingController extends Controller
         Setting::set('company_phone', $request->company_phone, $userId);
         Setting::set('company_fax', $request->company_fax, $userId);
         Setting::set('company_email', $request->company_email, $userId);
+        Setting::set('company_gstin', $request->company_gstin, $userId);
         Setting::set('default_low_stock_threshold', $request->default_low_stock_threshold, $userId);
+        Setting::set('default_gst_rate', $request->default_gst_rate, $userId);
 
         if ($request->hasFile('company_logo')) {
             $path = $request->file('company_logo')->store('logo', 'public');

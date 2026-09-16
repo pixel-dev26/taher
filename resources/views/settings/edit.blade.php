@@ -50,15 +50,31 @@
                     @error('company_email') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
             </div>
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <label for="company_gstin" class="form-label">GSTIN</label>
+                    <input type="text" class="form-control @error('company_gstin') is-invalid @enderror" id="company_gstin" name="company_gstin" value="{{ old('company_gstin', $settings['company_gstin']) }}" placeholder="e.g. 19AAAAA0000A1Z5">
+                    <div class="form-hint">Printed on the Delivery Challan header</div>
+                    @error('company_gstin') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="card mb-4">
         <div class="card-header"><h5 class="mb-0">Inventory Settings</h5></div>
         <div class="card-body">
-            <div class="col-md-4">
-                <label for="default_low_stock_threshold" class="form-label">Default Low Stock Threshold</label>
-                <input type="number" class="form-control" id="default_low_stock_threshold" name="default_low_stock_threshold" value="{{ old('default_low_stock_threshold', $settings['default_low_stock_threshold']) }}" min="0">
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="default_low_stock_threshold" class="form-label">Default Low Stock Threshold</label>
+                    <input type="number" class="form-control" id="default_low_stock_threshold" name="default_low_stock_threshold" value="{{ old('default_low_stock_threshold', $settings['default_low_stock_threshold']) }}" min="0">
+                </div>
+                <div class="col-md-4">
+                    <label for="default_gst_rate" class="form-label">Default GST Rate (%)</label>
+                    <input type="number" class="form-control @error('default_gst_rate') is-invalid @enderror" id="default_gst_rate" name="default_gst_rate" value="{{ old('default_gst_rate', $settings['default_gst_rate']) }}" min="0" max="100" step="0.01">
+                    <div class="form-hint">Split evenly into CGST + SGST on the Delivery Challan</div>
+                    @error('default_gst_rate') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
             </div>
         </div>
     </div>

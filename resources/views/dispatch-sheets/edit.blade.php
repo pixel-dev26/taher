@@ -32,8 +32,22 @@
                     <input type="text" class="form-control" name="customer_name" value="{{ old('customer_name', $dispatchSheet->customer_name) }}">
                 </div>
                 <div class="col-md-6">
+                    <label class="form-label">Customer Phone</label>
+                    <input type="text" class="form-control" name="customer_phone" value="{{ old('customer_phone', $dispatchSheet->customer_phone) }}">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
                     <label class="form-label">Delivery Address</label>
                     <input type="text" class="form-control" name="delivery_address" value="{{ old('delivery_address', $dispatchSheet->delivery_address) }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Customer GSTIN</label>
+                    <input type="text" class="form-control" name="customer_gstin" value="{{ old('customer_gstin', $dispatchSheet->customer_gstin) }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Place of Supply</label>
+                    <input type="text" class="form-control" name="place_of_supply" value="{{ old('place_of_supply', $dispatchSheet->place_of_supply) }}">
                 </div>
             </div>
             <div class="row mb-3">
@@ -50,6 +64,24 @@
                     <input type="text" class="form-control" name="driver_phone" value="{{ old('driver_phone', $dispatchSheet->driver_phone) }}" placeholder="+91...">
                 </div>
             </div>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">L.R. No.</label>
+                    <input type="text" class="form-control" name="lr_no" value="{{ old('lr_no', $dispatchSheet->lr_no) }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">E-Way No.</label>
+                    <input type="text" class="form-control" name="eway_no" value="{{ old('eway_no', $dispatchSheet->eway_no) }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Transport</label>
+                    <input type="text" class="form-control" name="transport_name" value="{{ old('transport_name', $dispatchSheet->transport_name) }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Transport ID</label>
+                    <input type="text" class="form-control" name="transport_id" value="{{ old('transport_id', $dispatchSheet->transport_id) }}">
+                </div>
+            </div>
             <div class="mb-3">
                 <label class="form-label">Notes</label>
                 <textarea class="form-control" name="notes" rows="2">{{ old('notes', $dispatchSheet->notes) }}</textarea>
@@ -62,8 +94,8 @@
 
             {{-- Old input wins over the saved rows, so a failed save keeps the
                  user's edits instead of reverting to what is stored. --}}
-            <x-line-items qty-label="Quantity"
-                          :items="$dispatchSheet->items->map(fn($i) => ['sku_id' => $i->sku_id, 'quantity' => $i->quantity])->all()" />
+            <x-line-items qty-label="Quantity" :show-price="true"
+                          :items="$dispatchSheet->items->map(fn($i) => ['sku_id' => $i->sku_id, 'quantity' => $i->quantity, 'unit_price' => $i->unit_price])->all()" />
 
             <div class="form-action-bar">
                 <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Save Changes</button>

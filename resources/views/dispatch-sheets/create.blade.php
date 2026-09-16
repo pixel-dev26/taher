@@ -54,15 +54,29 @@
                     <div class="form-hint">Who is this dispatch for?</div>
                 </div>
                 <div class="col-md-6">
+                    <label for="customer_phone" class="form-label">Customer Phone</label>
+                    <input type="text" class="form-control" id="customer_phone" name="customer_phone" value="{{ old('customer_phone') }}" placeholder="+91 98765 43210">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
                     <label for="delivery_address" class="form-label">Delivery Address</label>
                     <input type="text" class="form-control" id="delivery_address" name="delivery_address" value="{{ old('delivery_address') }}" placeholder="Full delivery address">
                     <div class="form-hint">Where should the goods be delivered?</div>
+                </div>
+                <div class="col-md-3">
+                    <label for="customer_gstin" class="form-label">Customer GSTIN</label>
+                    <input type="text" class="form-control" id="customer_gstin" name="customer_gstin" value="{{ old('customer_gstin') }}" placeholder="e.g. 19AAAAA0000A1Z5">
+                </div>
+                <div class="col-md-3">
+                    <label for="place_of_supply" class="form-label">Place of Supply</label>
+                    <input type="text" class="form-control" id="place_of_supply" name="place_of_supply" value="{{ old('place_of_supply') }}" placeholder="e.g. West Bengal (19)">
                 </div>
             </div>
 
             <hr class="section-divider">
 
-            {{-- Section 3: Vehicle & Driver --}}
+            {{-- Section 3: Vehicle, Driver & Transport --}}
             <div class="row mb-3">
                 <div class="col-md-4">
                     <label for="vehicle_no" class="form-label">Vehicle Number</label>
@@ -79,6 +93,24 @@
                     <div class="form-hint">Mobile number for contact</div>
                 </div>
             </div>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label for="lr_no" class="form-label">L.R. No.</label>
+                    <input type="text" class="form-control" id="lr_no" name="lr_no" value="{{ old('lr_no') }}" placeholder="Lorry receipt number">
+                </div>
+                <div class="col-md-3">
+                    <label for="eway_no" class="form-label">E-Way No.</label>
+                    <input type="text" class="form-control" id="eway_no" name="eway_no" value="{{ old('eway_no') }}" placeholder="E-Way bill number">
+                </div>
+                <div class="col-md-3">
+                    <label for="transport_name" class="form-label">Transport</label>
+                    <input type="text" class="form-control" id="transport_name" name="transport_name" value="{{ old('transport_name') }}" placeholder="Transporter name">
+                </div>
+                <div class="col-md-3">
+                    <label for="transport_id" class="form-label">Transport ID</label>
+                    <input type="text" class="form-control" id="transport_id" name="transport_id" value="{{ old('transport_id') }}" placeholder="Transporter GSTIN/ID">
+                </div>
+            </div>
 
             <div class="mb-3">
                 <label for="notes" class="form-label">Notes</label>
@@ -93,7 +125,7 @@
 
             <x-sku-picker require-godown show-available placeholder="Type product name or code..." />
 
-            <x-line-items show-available qty-label="Quantity" />
+            <x-line-items show-available qty-label="Quantity" :show-price="true" />
 
             {{-- Submit --}}
             <div class="form-action-bar">

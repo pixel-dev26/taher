@@ -20,12 +20,20 @@ class StoreDispatchSheetRequest extends FormRequest
             'items' => 'required|array|min:1',
             'items.*.sku_id' => 'required|exists:skus,id',
             'items.*.quantity' => 'required|numeric|gt:0',
+            'items.*.unit_price' => 'required|numeric|min:0|max:9999999999',
             'customer_name' => 'nullable|string|max:255',
+            'customer_phone' => 'nullable|string|max:20',
+            'customer_gstin' => 'nullable|string|max:20',
+            'place_of_supply' => 'nullable|string|max:100',
             'delivery_address' => 'nullable|string|max:1000',
             'delivery_date' => 'nullable|date|after_or_equal:today',
             'vehicle_no' => 'nullable|string|max:50',
             'driver_name' => 'nullable|string|max:255',
             'driver_phone' => 'nullable|string|max:20',
+            'lr_no' => 'nullable|string|max:100',
+            'eway_no' => 'nullable|string|max:50',
+            'transport_name' => 'nullable|string|max:255',
+            'transport_id' => 'nullable|string|max:100',
             'notes' => 'nullable|string|max:1000',
         ];
     }
@@ -67,6 +75,8 @@ class StoreDispatchSheetRequest extends FormRequest
             'items.min' => 'At least one item is required.',
             'items.*.sku_id.required' => 'Please select a SKU for each item.',
             'items.*.quantity.gt' => 'Quantity must be greater than 0.',
+            'items.*.unit_price.required' => 'Enter the rate per unit for each item.',
+            'items.*.unit_price.min' => 'Rate cannot be negative.',
         ];
     }
 }

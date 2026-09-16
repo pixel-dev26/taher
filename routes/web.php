@@ -49,6 +49,7 @@ Route::middleware(['auth', 'ensurePasswordChanged'])->group(function () {
     Route::resource('dispatch-sheets', DispatchSheetController::class)->except(['destroy']);
     Route::patch('dispatch-sheets/{dispatch_sheet}/cancel', [DispatchSheetController::class, 'cancel'])->name('dispatch-sheets.cancel');
     Route::get('dispatch-sheets/{dispatch_sheet}/pdf', [DispatchSheetController::class, 'downloadPdf'])->name('dispatch-sheets.pdf');
+    Route::get('dispatch-sheets/{dispatch_sheet}/challan', [DispatchSheetController::class, 'downloadChallan'])->name('dispatch-sheets.challan');
 
     // Dispatch Fulfillment (mark as actually dispatched)
     // The queue is now the "To send" tab on the Dispatch screen; this URL

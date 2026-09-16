@@ -6,7 +6,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #333; padding: 20px; }
         .header { border-bottom: 3px solid #002A85; padding-bottom: 10px; margin-bottom: 15px; }
-        .header h1 { color: #002A85; font-size: 20px; float: right; }
+        .header h1 { color: #002A85; font-size: 20px; }
         .header .company { font-size: 14px; font-weight: bold; }
         .header .ds-number { font-size: 16px; color: #002A85; }
         .clear { clear: both; }
@@ -49,8 +49,8 @@
                 <div class="company">{{ $companyName }}</div>
             @endunless
         </div>
-        <h1>DISPATCH SHEET</h1>
         <div style="float: right; text-align: right;">
+            <h1>DISPATCH SHEET</h1>
             <div class="ds-number">{{ $sheet->ds_number }}</div>
             <span class="status status-{{ $sheet->status }}">{{ strtoupper($sheet->status) }}</span>
         </div>

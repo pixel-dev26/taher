@@ -42,6 +42,18 @@
                 <div class="info-value">{{ $dispatchSheet->customer_name ?? '-' }}</div>
             </div>
             <div class="info-item">
+                <div class="info-label">Customer Phone</div>
+                <div class="info-value">{{ $dispatchSheet->customer_phone ?? '-' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Customer GSTIN</div>
+                <div class="info-value">{{ $dispatchSheet->customer_gstin ?? '-' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Place of Supply</div>
+                <div class="info-value">{{ $dispatchSheet->place_of_supply ?? '-' }}</div>
+            </div>
+            <div class="info-item">
                 <div class="info-label">Delivery Date</div>
                 <div class="info-value">{{ $dispatchSheet->delivery_date?->format('d M Y') ?? '-' }}</div>
             </div>
@@ -60,6 +72,22 @@
             <div class="info-item">
                 <div class="info-label">Driver Phone</div>
                 <div class="info-value">{{ $dispatchSheet->driver_phone ?? '-' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">L.R. No.</div>
+                <div class="info-value">{{ $dispatchSheet->lr_no ?? '-' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">E-Way No.</div>
+                <div class="info-value">{{ $dispatchSheet->eway_no ?? '-' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Transport</div>
+                <div class="info-value">{{ $dispatchSheet->transport_name ?? '-' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Transport ID</div>
+                <div class="info-value">{{ $dispatchSheet->transport_id ?? '-' }}</div>
             </div>
         </div>
 
@@ -97,6 +125,10 @@
 
         {{-- Line Items --}}
         <h6 class="fw-bold mb-3"><i class="bi bi-box-seam me-1"></i> Items in this Dispatch</h6>
+        @php
+            // Dispatch sheets created before rates were captured keep their old layout.
+            $priced = $dispatchSheet->items->whereNotNull('unit_price')->isNotEmpty();
+        @endphp
         <div class="table-responsive">
             <table class="table table-stack table-bordered">
                 <thead>
@@ -106,6 +138,9 @@
                         <th>Product</th>
                         <th class="text-end">Quantity</th>
                         <th>UoM</th>
+                        @if($priced)
+                            <th class="text-end">Rate</th><th class="text-end">Amount</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody>
@@ -114,16 +149,24 @@
                         <td class="text-muted">{{ $i + 1 }}</td>
                         <td><code>{{ $item->sku->code }}</code></td>
                         <td class="fw-semibold">{{ $item->sku->name }}</td>
-                        <td class="text-end fw-bold">{{ number_format($item->quantity, $item->quantity == intval($item->quantity) ? 0 : 3) }}</td>
-                        <td>{{ $item->sku->unit_of_measure }}</td>
+                        <td class="text-end fw-bold" data-label="Quantity">{{ number_format($item->quantity, $item->quantity == intval($item->quantity) ? 0 : 3) }}</td>
+                        <td data-label="Unit">{{ $item->sku->unit_of_measure }}</td>
+                        @if($priced)
+                            <td class="text-end" data-label="Rate">{{ \App\Support\Money::inr($item->unit_price === null ? null : (float) $item->unit_price) }}</td>
+                            <td class="text-end fw-semibold" data-label="Amount">{{ \App\Support\Money::inr($item->amount) }}</td>
+                        @endif
                     </tr>
                     @endforeach
                 </tbody>
                 <tfoot>
                     <tr style="background-color: #F0F3F5;">
                         <td colspan="3" class="fw-bold">Total</td>
-                        <td class="text-end fw-bold" style="font-size: 0.9rem;">{{ number_format($dispatchSheet->items->sum('quantity'), 0) }}</td>
+                        <td class="text-end fw-bold" style="font-size: 0.9rem;" data-label="Quantity">{{ number_format($dispatchSheet->items->sum('quantity'), 0) }}</td>
                         <td></td>
+                        @if($priced)
+                            <td></td>
+                            <td class="text-end fw-bold" data-label="Total Amount">{{ \App\Support\Money::inr($dispatchSheet->items->sum(fn ($item) => $item->amount ?? 0)) }}</td>
+                        @endif
                     </tr>
                 </tfoot>
             </table>
@@ -146,6 +189,9 @@
                     <i class="bi bi-file-pdf me-1"></i> Download PDF
                 </a>
             @endif
+            <a href="{{ route('dispatch-sheets.challan', $dispatchSheet) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-receipt me-1"></i> Download Challan
+            </a>
             @if(in_array($dispatchSheet->status, ['pending', 'dispatched']))
                 <button type="button" class="btn btn-primary" id="sharePdfBtn" onclick="sharePdf()">
                     <i class="bi bi-share-fill me-1"></i> Share
