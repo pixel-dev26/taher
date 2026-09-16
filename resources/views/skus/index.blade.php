@@ -10,7 +10,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form method="GET" class="row g-2 mb-3">
+        <form method="GET" class="row g-2 mb-3" data-autosubmit-filters>
             <div class="col-sm-4">
                 <input type="text" name="search" class="form-control" placeholder="Search code or name..." value="{{ request('search') }}">
             </div>

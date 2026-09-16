@@ -12,7 +12,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form method="GET" class="row g-2 mb-3">
+        <form method="GET" class="row g-2 mb-3" data-autosubmit-filters>
             <div class="col-sm-3">
                 <label class="form-label small text-muted mb-1">Godown</label>
                 <select name="godown_id" class="form-select">

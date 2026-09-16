@@ -9,7 +9,7 @@
 
 <div class="card mb-4">
     <div class="card-body">
-        <form method="GET" class="row g-2 align-items-end">
+        <form method="GET" class="row g-2 align-items-end" data-autosubmit-filters>
             <div class="col-sm-2">
                 <label class="form-label">From *</label>
                 <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}" required>

@@ -889,6 +889,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ asset('js/select.js') }}?v={{ filemtime(public_path('js/select.js')) }}"></script>
+    <script src="{{ asset('js/filter-autosubmit.js') }}?v={{ filemtime(public_path('js/filter-autosubmit.js')) }}"></script>
     <script>
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('show');

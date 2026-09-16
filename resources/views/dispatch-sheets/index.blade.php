@@ -38,7 +38,7 @@
 @if($tab !== 'to-send')
 <div class="card mb-3">
     <div class="card-body">
-        <form method="GET" class="row g-3 align-items-end">
+        <form method="GET" class="row g-3 align-items-end" data-autosubmit-filters>
             <input type="hidden" name="tab" value="{{ $tab }}">
             <div class="col-6 col-lg-2">
                 <label class="form-label" for="status">Status</label>

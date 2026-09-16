@@ -12,7 +12,7 @@
 {{-- Search, filter, and the as-on-date control that used to be its own screen --}}
 <div class="card mb-4">
     <div class="card-body">
-        <form method="GET" class="row g-3 align-items-end">
+        <form method="GET" class="row g-3 align-items-end" data-autosubmit-filters>
             <div class="col-12 col-lg-4">
                 <label class="form-label" for="search">Search</label>
                 <input type="text" class="form-control" id="search" name="search"
