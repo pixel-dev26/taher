@@ -75,12 +75,37 @@
     </div>
 
     <div style="margin-bottom: 8px;">
-        <div style="float: left; width: 52%;">
+        <div style="float: left; width: 50%;">
             <div class="info-section" style="margin-right: 8px;">
+                <div class="box-title">Ship From (Consignor)</div>
+                <table>
+                    <tr>
+                        <td class="label">Godown</td>
+                        <td colspan="3">{{ $transfer->sourceGodown->code }} - {{ $transfer->sourceGodown->name }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Address</td>
+                        <td colspan="3">{{ $transfer->sourceGodown->address ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Phone</td>
+                        <td>{{ $transfer->sourceGodown->contact_phone ?? '-' }}</td>
+                        <td class="label">GSTIN</td>
+                        <td>{{ $companyGstin ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Place of Supply</td>
+                        <td colspan="3">-</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div style="float: left; width: 50%;">
+            <div class="info-section" style="margin-left: 8px;">
                 <div class="box-title">Ship To (Consignee)</div>
                 <table>
                     <tr>
-                        <td class="label">M/S</td>
+                        <td class="label">Godown</td>
                         <td colspan="3">{{ $transfer->destGodown->code }} - {{ $transfer->destGodown->name }}</td>
                     </tr>
                     <tr>
@@ -100,51 +125,35 @@
                 </table>
             </div>
         </div>
-        <div style="float: left; width: 48%;">
-            <div class="info-section" style="margin-left: 8px;">
-                <div class="box-title">Shipment Detail</div>
-                <table>
-                    <tr>
-                        <td class="label">Challan No.</td>
-                        <td>{{ $transfer->transfer_number }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Challan Date</td>
-                        <td>{{ $transfer->created_at->format('d-M-Y') }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Ship From</td>
-                        <td>
-                            {{ $transfer->sourceGodown->code }} - {{ $transfer->sourceGodown->name }}
-                            @if($transfer->sourceGodown->address)
-                                <br><span style="font-weight: normal; color: #666;">{{ $transfer->sourceGodown->address }}</span>
-                            @endif
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="label">L.R. No.</td>
-                        <td>{{ $transfer->lr_no ?? '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">E-Way No.</td>
-                        <td>{{ $transfer->eway_no ?? '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Transport</td>
-                        <td>{{ $transfer->transport_name ?? '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Transport ID</td>
-                        <td>{{ $transfer->transport_id ?? '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Vehicle Number</td>
-                        <td>{{ $transfer->vehicle_no ?? '-' }}</td>
-                    </tr>
-                </table>
-            </div>
-        </div>
         <div class="clear"></div>
+    </div>
+
+    <div class="info-section" style="margin-bottom: 8px;">
+        <div class="box-title">Shipment Detail</div>
+        <table>
+            <tr>
+                <td class="label">Challan No.</td>
+                <td>{{ $transfer->transfer_number }}</td>
+                <td class="label">Challan Date</td>
+                <td>{{ $transfer->created_at->format('d-M-Y') }}</td>
+            </tr>
+            <tr>
+                <td class="label">L.R. No.</td>
+                <td>{{ $transfer->lr_no ?? '-' }}</td>
+                <td class="label">E-Way No.</td>
+                <td>{{ $transfer->eway_no ?? '-' }}</td>
+            </tr>
+            <tr>
+                <td class="label">Transport</td>
+                <td>{{ $transfer->transport_name ?? '-' }}</td>
+                <td class="label">Transport ID</td>
+                <td>{{ $transfer->transport_id ?? '-' }}</td>
+            </tr>
+            <tr>
+                <td class="label">Vehicle Number</td>
+                <td colspan="3">{{ $transfer->vehicle_no ?? '-' }}</td>
+            </tr>
+        </table>
     </div>
 
     <table class="items-table">
