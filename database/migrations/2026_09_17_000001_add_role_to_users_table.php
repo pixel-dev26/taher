@@ -32,10 +32,19 @@ return new class extends Migration
         if ($userCount === 1) {
             DB::table('users')->update(['role' => 'admin']);
         } elseif ($userCount > 1) {
+            // Leaving everyone as 'staff' would lock every account out of
+            // the Users screen with no way back except raw SQL. The oldest
+            // active account is the one that set the business up; promote it
+            // and say so, so it can be corrected from the Users screen.
+            $original = DB::table('users')->where('is_active', true)->orderBy('id')->first()
+                ?? DB::table('users')->orderBy('id')->first();
+
+            DB::table('users')->where('id', $original->id)->update(['role' => 'admin']);
+
             Log::warning(
                 "add_role_to_users_table migration: {$userCount} users already existed; ".
-                'none were auto-promoted to admin. Promote the correct account(s) manually '.
-                '(e.g. via a one-off query or, once at least one admin exists, the Users screen).'
+                "only the oldest account ({$original->email}) was promoted to admin. ".
+                'Review the roles on the Users screen.'
             );
         }
     }

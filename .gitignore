@@ -20,6 +20,9 @@ yarn-error.log
 # Client data — the live database, its local copy, and uploaded files stay out of git
 /database/*.sqlite
 /database/*.sqlite-journal
+/database/*.sqlite-wal
+/database/*.sqlite-shm
+/database/*.sqlite.backup-*
 /storage/app/*
 
 # Runtime files Laravel regenerates
