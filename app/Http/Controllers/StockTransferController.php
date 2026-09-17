@@ -48,14 +48,18 @@ class StockTransferController extends Controller
             $transfer = DB::transaction(function () use ($request) {
                 $transferNumber = NumberGenerator::transfer();
 
-                $transfer = StockTransfer::create([
+                // Suppress the automatic Activity Log entry here — items are
+                // added in the loop below, so logging now would only ever
+                // capture the header, never which products are moving. One
+                // complete entry is written manually once items exist.
+                $transfer = StockTransfer::withoutEvents(fn () => StockTransfer::create([
                     'transfer_number' => $transferNumber,
                     'source_godown_id' => $request->source_godown_id,
                     'dest_godown_id' => $request->dest_godown_id,
                     'status' => 'pending',
                     'created_by' => auth()->id(),
                     'notes' => $request->notes,
-                ]);
+                ]));
 
                 foreach ($request->items as $item) {
                     TransferItem::create([
@@ -67,6 +71,8 @@ class StockTransferController extends Controller
 
                 $transfer->load(['items.sku', 'sourceGodown']);
                 $this->stockService->processTransferOut($transfer);
+
+                $transfer->logCreatedWithItems(['items' => $this->itemsSummary($transfer->items)]);
 
                 return $transfer;
             });
@@ -84,6 +90,15 @@ class StockTransferController extends Controller
     {
         $stockTransfer->load(['items.sku', 'sourceGodown', 'destGodown', 'creator', 'resolver']);
         return view('stock-transfers.show', compact('stockTransfer'));
+    }
+
+    /** "GIP-001 x 40, GIP-002 x 20" — a readable Activity Log summary. */
+    private function itemsSummary($items): string
+    {
+        return $items->map(function ($item) {
+            $qty = rtrim(rtrim(number_format((float) $item->quantity, 3, '.', ''), '0'), '.');
+            return "{$item->sku->code} x {$qty}";
+        })->implode(', ');
     }
 
     public function accept(StockTransfer $stockTransfer)

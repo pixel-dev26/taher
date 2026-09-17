@@ -53,7 +53,11 @@ class GrnController extends Controller
             $grn = DB::transaction(function () use ($request) {
                 $grnNumber = NumberGenerator::grn();
 
-                $grn = Grn::create([
+                // Suppress the automatic Activity Log entry here — items are
+                // added in the loop below, so logging now would only ever
+                // capture the header, never which products came in. One
+                // complete entry is written manually once items exist.
+                $grn = Grn::withoutEvents(fn () => Grn::create([
                     'grn_number' => $grnNumber,
                     'godown_id' => $request->godown_id,
                     'receipt_date' => $request->receipt_date,
@@ -61,7 +65,7 @@ class GrnController extends Controller
                     'supplier_name' => $request->supplier_name,
                     'notes' => $request->notes,
                     'created_by' => auth()->id(),
-                ]);
+                ]));
 
                 foreach ($request->items as $item) {
                     GrnItem::create([
@@ -72,8 +76,10 @@ class GrnController extends Controller
                     ]);
                 }
 
-                $grn->load('items');
+                $grn->load(['items.sku']);
                 $this->stockService->processStockIn($grn);
+
+                $grn->logCreatedWithItems(['items' => $this->itemsSummary($grn->items)]);
 
                 return $grn;
             });
@@ -88,5 +94,14 @@ class GrnController extends Controller
     {
         $grn->load(['items.sku', 'godown', 'creator']);
         return view('grn.show', compact('grn'));
+    }
+
+    /** "GIP-001 x 40, GIP-002 x 20" — a readable Activity Log summary. */
+    private function itemsSummary($items): string
+    {
+        return $items->map(function ($item) {
+            $qty = rtrim(rtrim(number_format((float) $item->quantity, 3, '.', ''), '0'), '.');
+            return "{$item->sku->code} x {$qty}";
+        })->implode(', ');
     }
 }

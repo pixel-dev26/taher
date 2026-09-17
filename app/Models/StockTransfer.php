@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class StockTransfer extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'transfer_number', 'source_godown_id', 'dest_godown_id',
@@ -53,5 +54,10 @@ class StockTransfer extends Model
     {
         return $query->where('status', 'pending')
                      ->where('created_at', '<', now()->subHours(48));
+    }
+
+    public function activityLogLabel(): string
+    {
+        return $this->transfer_number;
     }
 }

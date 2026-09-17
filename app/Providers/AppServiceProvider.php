@@ -26,5 +26,9 @@ class AppServiceProvider extends ServiceProvider
                 auth()->check() ? DispatchSheet::pending()->count() : 0
             );
         });
+
+        // No explicit Event::listen() here: Laravel auto-discovers
+        // App\Listeners\LogSuccessfulLogin by its handle(Login $event)
+        // type-hint. Registering it again here double-fires it.
     }
 }

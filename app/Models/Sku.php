@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Sku extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'code', 'name', 'category', 'variant_attributes',
@@ -39,5 +40,10 @@ class Sku extends Model
         return $this->stockRecords->sum(function ($record) {
             return $record->on_hand - $record->reserved;
         });
+    }
+
+    public function activityLogLabel(): string
+    {
+        return $this->code;
     }
 }

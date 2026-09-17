@@ -756,6 +756,14 @@
                 <a class="nav-link {{ request()->is('settings*') || request()->is('account*') ? 'active' : '' }}" href="{{ route('settings.edit') }}">
                     <i class="bi bi-gear-fill"></i> Settings
                 </a>
+                @if(auth()->user()->isAdmin())
+                    <a class="nav-link {{ request()->is('users*') ? 'active' : '' }}" href="{{ route('users.index') }}">
+                        <i class="bi bi-people-fill"></i> Users
+                    </a>
+                    <a class="nav-link {{ request()->is('activity-log*') ? 'active' : '' }}" href="{{ route('activity-log.index') }}">
+                        <i class="bi bi-clock-history"></i> Activity Log
+                    </a>
+                @endif
             @endauth
         </div>
     </nav>

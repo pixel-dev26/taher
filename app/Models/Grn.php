@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Grn extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'grn_number', 'godown_id', 'receipt_date', 'challan_no',
@@ -32,5 +33,10 @@ class Grn extends Model
     public function items()
     {
         return $this->hasMany(GrnItem::class);
+    }
+
+    public function activityLogLabel(): string
+    {
+        return $this->grn_number;
     }
 }

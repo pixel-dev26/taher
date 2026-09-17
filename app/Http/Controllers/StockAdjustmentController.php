@@ -56,14 +56,18 @@ class StockAdjustmentController extends Controller
             $adjustment = DB::transaction(function () use ($request) {
                 $adjNumber = NumberGenerator::adjustment();
 
-                $adjustment = StockAdjustment::create([
+                // Suppress the automatic Activity Log entry here — items are
+                // added in the loop below, so logging now would only ever
+                // capture the header, never which products were adjusted.
+                // One complete entry is written manually once items exist.
+                $adjustment = StockAdjustment::withoutEvents(fn () => StockAdjustment::create([
                     'adjustment_number' => $adjNumber,
                     'godown_id' => $request->godown_id,
                     'reason' => $request->reason,
                     'reason_notes' => $request->reason_notes,
                     'reference_doc' => $request->reference_doc,
                     'created_by' => auth()->id(),
-                ]);
+                ]));
 
                 foreach ($request->items as $item) {
                     AdjustmentItem::create([
@@ -77,6 +81,8 @@ class StockAdjustmentController extends Controller
 
                 $adjustment->load(['items.sku', 'godown']);
                 $this->stockService->processAdjustment($adjustment);
+
+                $adjustment->logCreatedWithItems(['items' => $this->itemsSummary($adjustment->items)]);
 
                 return $adjustment;
             });
@@ -94,5 +100,15 @@ class StockAdjustmentController extends Controller
     {
         $stockAdjustment->load(['items.sku', 'godown', 'creator']);
         return view('stock-adjustments.show', compact('stockAdjustment'));
+    }
+
+    /** "GIP-001 x +40, GIP-002 x -5" — a readable Activity Log summary. */
+    private function itemsSummary($items): string
+    {
+        return $items->map(function ($item) {
+            $qty = (float) $item->quantity;
+            $formatted = rtrim(rtrim(number_format(abs($qty), 3, '.', ''), '0'), '.');
+            return "{$item->sku->code} x " . ($qty >= 0 ? '+' : '-') . $formatted;
+        })->implode(', ');
     }
 }

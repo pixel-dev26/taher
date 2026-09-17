@@ -41,14 +41,28 @@ class SettingController extends Controller
 
         $userId = auth()->id();
 
-        Setting::set('company_name', $request->company_name, $userId);
-        Setting::set('company_address', $request->company_address, $userId);
-        Setting::set('company_phone', $request->company_phone, $userId);
-        Setting::set('company_fax', $request->company_fax, $userId);
-        Setting::set('company_email', $request->company_email, $userId);
-        Setting::set('company_gstin', $request->company_gstin, $userId);
-        Setting::set('default_low_stock_threshold', $request->default_low_stock_threshold, $userId);
-        Setting::set('default_gst_rate', $request->default_gst_rate, $userId);
+        // Only write keys whose value actually changed. Setting::set() always
+        // stamps updated_by/updated_at, so calling it unconditionally for all
+        // 8 fields on every save — regardless of which one the user actually
+        // edited — used to log a spurious "updated" entry (just updated_by
+        // churn, no real value change) for every untouched field, and could
+        // write up to 9 Activity Log rows for a single save.
+        $fields = [
+            'company_name' => $request->company_name,
+            'company_address' => $request->company_address,
+            'company_phone' => $request->company_phone,
+            'company_fax' => $request->company_fax,
+            'company_email' => $request->company_email,
+            'company_gstin' => $request->company_gstin,
+            'default_low_stock_threshold' => $request->default_low_stock_threshold,
+            'default_gst_rate' => $request->default_gst_rate,
+        ];
+
+        foreach ($fields as $key => $value) {
+            if ((string) Setting::get($key) !== (string) $value) {
+                Setting::set($key, $value, $userId);
+            }
+        }
 
         if ($request->hasFile('company_logo')) {
             $path = $request->file('company_logo')->store('logo', 'public');

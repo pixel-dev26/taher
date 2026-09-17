@@ -38,8 +38,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // Update last login timestamp
-        auth()->user()->update(['last_login_at' => now()]);
+        // Update last login timestamp — quietly, so this routine bookkeeping
+        // doesn't also fire User's LogsActivity 'updated' hook on top of the
+        // dedicated 'login' entry LogSuccessfulLogin already writes for the
+        // Login event, which would otherwise log every sign-in twice.
+        auth()->user()->updateQuietly(['last_login_at' => now()]);
 
         return redirect()->intended(route('dashboard'));
     }

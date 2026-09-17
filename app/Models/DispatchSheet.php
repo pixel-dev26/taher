@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class DispatchSheet extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'ds_number', 'godown_id', 'status', 'created_by', 'customer_name',
@@ -60,5 +61,10 @@ class DispatchSheet extends Model
     public function scopeCancelled($query)
     {
         return $query->where('status', 'cancelled');
+    }
+
+    public function activityLogLabel(): string
+    {
+        return $this->ds_number;
     }
 }

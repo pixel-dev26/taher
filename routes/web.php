@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DispatchFulfillmentController;
 use App\Http\Controllers\DispatchSheetController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\SkuController;
 use App\Http\Controllers\StockAdjustmentController;
 use App\Http\Controllers\StockSearchController;
 use App\Http\Controllers\StockTransferController;
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,11 +22,13 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn() => redirect('/login'));
 
 // Force password change
-Route::get('/change-password', [PasswordController::class, 'showChangeForm'])->middleware('auth')->name('change-password');
-Route::post('/change-password', [PasswordController::class, 'change'])->middleware('auth');
+Route::get('/change-password', [PasswordController::class, 'showChangeForm'])->middleware(['auth', 'active'])->name('change-password');
+Route::post('/change-password', [PasswordController::class, 'change'])->middleware(['auth', 'active']);
 
-// All authenticated routes — single admin user, no role gating
-Route::middleware(['auth', 'ensurePasswordChanged'])->group(function () {
+// All authenticated routes — two roles, admin and staff (see EnsureIsAdmin /
+// the 'admin' middleware for what's admin-only: Users, the Activity Log, and
+// deactivating a product). Everything else is open to both.
+Route::middleware(['auth', 'active', 'ensurePasswordChanged'])->group(function () {
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -33,8 +37,15 @@ Route::middleware(['auth', 'ensurePasswordChanged'])->group(function () {
     Route::get('account', [AccountController::class, 'edit'])->name('account.edit');
     Route::put('account', [AccountController::class, 'update'])->name('account.update');
 
-    // Products (SKU Master)
-    Route::resource('skus', SkuController::class);
+    // Users (Admin only)
+    Route::resource('users', UserController::class)->except(['destroy', 'show'])->middleware('admin');
+
+    // Activity Log (Admin only)
+    Route::get('activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index')->middleware('admin');
+
+    // Products (SKU Master) — deactivating one is the app's one destructive
+    // action, so that verb alone is Admin only; everything else is open.
+    Route::resource('skus', SkuController::class)->middlewareFor('destroy', 'admin');
 
     // Godowns
     Route::resource('godowns', GodownController::class)->except(['show', 'destroy']);

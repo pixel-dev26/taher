@@ -94,7 +94,15 @@ class DispatchSheetController extends Controller
             $sheet = DB::transaction(function () use ($request) {
                 $dsNumber = NumberGenerator::dispatchSheet();
 
-                $sheet = DispatchSheet::create([
+                // Suppress the automatic Activity Log entry here — items are
+                // added in the loop below, so logging now would only ever
+                // capture the header, never which products are being sent.
+                // One complete entry is written manually once items exist.
+                // pdf_path is set to its final value up front (same pattern
+                // PdfService uses) so that call's own ->update() further down
+                // finds nothing dirty and doesn't add a second, spurious
+                // "updated" entry for a path that isn't actually changing.
+                $sheet = DispatchSheet::withoutEvents(fn () => DispatchSheet::create([
                     'ds_number' => $dsNumber,
                     'godown_id' => $request->godown_id,
                     'status' => 'pending',
@@ -113,7 +121,8 @@ class DispatchSheetController extends Controller
                     'transport_name' => $request->transport_name,
                     'transport_id' => $request->transport_id,
                     'notes' => $request->notes,
-                ]);
+                    'pdf_path' => "dispatch-sheets/{$dsNumber}.pdf",
+                ]));
 
                 foreach ($request->items as $item) {
                     DispatchSheetItem::create([
@@ -129,6 +138,8 @@ class DispatchSheetController extends Controller
 
                 // Generate PDF
                 $this->pdfService->generateDispatchPdf($sheet);
+
+                $sheet->logCreatedWithItems(['items' => $this->itemsSummary($sheet->items)]);
 
                 return $sheet;
             });
@@ -164,10 +175,31 @@ class DispatchSheetController extends Controller
     {
         try {
             DB::transaction(function () use ($request, $dispatchSheet) {
+                $headerFields = [
+                    'customer_name', 'customer_phone', 'customer_gstin', 'place_of_supply',
+                    'delivery_address', 'delivery_date', 'vehicle_no', 'driver_name',
+                    'driver_phone', 'lr_no', 'eway_no', 'transport_name', 'transport_id', 'notes',
+                ];
+
                 $oldItems = $dispatchSheet->items->pluck('quantity', 'sku_id')
                     ->map(fn($q) => (float)$q)->toArray();
 
-                $dispatchSheet->update([
+                // Snapshot before the edit, for one manual Activity Log entry
+                // covering both header fields and items together — items are
+                // swapped out below (delete + recreate), which the automatic
+                // 'updated' hook can't see since it fires against the header
+                // update alone, before the item swap happens. delivery_date
+                // is cast to a Carbon instance, so it's normalized to a plain
+                // string here — otherwise two fresh instances of the same
+                // unchanged date would never compare equal, and logChange()'s
+                // "skip when nothing changed" check would never trigger.
+                $before = array_map([$this, 'normalizeForLog'], $dispatchSheet->only($headerFields));
+                $before['items'] = $this->itemsSummary($dispatchSheet->items()->with('sku')->get());
+
+                // Suppress the automatic entry for this header-only update —
+                // it would otherwise log just the header fields under its own
+                // separate, incomplete entry.
+                DispatchSheet::withoutEvents(fn () => $dispatchSheet->update([
                     'customer_name' => $request->customer_name,
                     'customer_phone' => $request->customer_phone,
                     'customer_gstin' => $request->customer_gstin,
@@ -182,7 +214,7 @@ class DispatchSheetController extends Controller
                     'transport_name' => $request->transport_name,
                     'transport_id' => $request->transport_id,
                     'notes' => $request->notes,
-                ]);
+                ]));
 
                 // Delete old items and create new ones
                 $dispatchSheet->items()->delete();
@@ -203,6 +235,10 @@ class DispatchSheetController extends Controller
 
                 // Regenerate PDF
                 $this->pdfService->generateDispatchPdf($dispatchSheet);
+
+                $after = array_map([$this, 'normalizeForLog'], $dispatchSheet->only($headerFields));
+                $after['items'] = $this->itemsSummary($dispatchSheet->items);
+                $dispatchSheet->logChange('updated', $before, $after);
             });
 
             return redirect()->route('dispatch-sheets.show', $dispatchSheet)
@@ -267,5 +303,20 @@ class DispatchSheetController extends Controller
     {
         return $this->pdfService->generateChallanPdf($dispatchSheet)
             ->download("{$dispatchSheet->ds_number}-challan.pdf");
+    }
+
+    /** "GIP-001 x 40, GIP-002 x 20" — a readable Activity Log summary. */
+    private function itemsSummary($items): string
+    {
+        return collect($items)->map(function ($item) {
+            $qty = rtrim(rtrim(number_format((float) $item->quantity, 3, '.', ''), '0'), '.');
+            return "{$item->sku->code} x {$qty}";
+        })->implode(', ');
+    }
+
+    /** Carbon casts (delivery_date) need to be plain strings to compare/log cleanly. */
+    private function normalizeForLog($value)
+    {
+        return $value instanceof \DateTimeInterface ? $value->format('Y-m-d') : $value;
     }
 }

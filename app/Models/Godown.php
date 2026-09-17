@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Godown extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = ['code', 'name', 'address', 'contact_phone', 'is_active'];
 
@@ -34,5 +35,10 @@ class Godown extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function activityLogLabel(): string
+    {
+        return $this->code;
     }
 }
