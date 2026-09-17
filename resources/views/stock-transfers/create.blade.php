@@ -50,6 +50,44 @@
                 </div>
             </div>
 
+            <hr class="section-divider">
+
+            {{-- Vehicle, Driver & Transport --}}
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="vehicle_no" class="form-label">Vehicle Number</label>
+                    <input type="text" class="form-control" id="vehicle_no" name="vehicle_no" value="{{ old('vehicle_no') }}" placeholder="e.g. MH 12 AB 1234">
+                    <div class="form-hint">Vehicle registration number</div>
+                </div>
+                <div class="col-md-4">
+                    <label for="driver_name" class="form-label">Driver Name</label>
+                    <input type="text" class="form-control" id="driver_name" name="driver_name" value="{{ old('driver_name') }}" placeholder="Full name of driver">
+                </div>
+                <div class="col-md-4">
+                    <label for="driver_phone" class="form-label">Driver Phone</label>
+                    <input type="text" class="form-control" id="driver_phone" name="driver_phone" value="{{ old('driver_phone') }}" placeholder="+91 98765 43210">
+                    <div class="form-hint">Mobile number for contact</div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label for="lr_no" class="form-label">L.R. No.</label>
+                    <input type="text" class="form-control" id="lr_no" name="lr_no" value="{{ old('lr_no') }}" placeholder="Lorry receipt number">
+                </div>
+                <div class="col-md-3">
+                    <label for="eway_no" class="form-label">E-Way No.</label>
+                    <input type="text" class="form-control" id="eway_no" name="eway_no" value="{{ old('eway_no') }}" placeholder="E-Way bill number">
+                </div>
+                <div class="col-md-3">
+                    <label for="transport_name" class="form-label">Transport</label>
+                    <input type="text" class="form-control" id="transport_name" name="transport_name" value="{{ old('transport_name') }}" placeholder="Transporter name">
+                </div>
+                <div class="col-md-3">
+                    <label for="transport_id" class="form-label">Transport ID</label>
+                    <input type="text" class="form-control" id="transport_id" name="transport_id" value="{{ old('transport_id') }}" placeholder="Transporter GSTIN/ID">
+                </div>
+            </div>
+
             <div class="mb-4">
                 <label class="form-label">Notes (optional)</label>
                 <textarea class="form-control" name="notes" rows="2" placeholder="Any reason for this transfer or special instructions...">{{ old('notes') }}</textarea>
@@ -63,7 +101,7 @@
             <x-sku-picker godown-field="source_godown_id" require-godown show-available
                           placeholder="Type product name or code..." />
 
-            <x-line-items godown-field="source_godown_id" show-available qty-label="Quantity to Send" />
+            <x-line-items godown-field="source_godown_id" show-available qty-label="Quantity to Send" :show-price="true" :show-hsn="true" />
 
             {{-- Step 3: Send --}}
             <div class="form-action-bar">

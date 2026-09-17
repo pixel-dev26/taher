@@ -20,24 +20,29 @@
         .info-section .box-title { background-color: #002A85; color: #fff; font-weight: bold; font-size: 10px; padding: 2px 8px; }
         .info-section table { width: 100%; }
         .info-section td { padding: 1px 8px; vertical-align: top; font-size: 9.5px; }
-        .info-section .label { font-weight: bold; color: #555; width: 85px; }
-        .info-section .sub { font-weight: normal; color: #666; }
+        .info-section .label { font-weight: bold; color: #555; width: 95px; }
 
         .items-table { width: 100%; border-collapse: collapse; margin-top: 2px; }
-        .items-table th { background-color: #002A85; color: #fff; padding: 4px; text-align: left; font-size: 8.5px; border: 1px solid #002A85; }
-        .items-table td { border: 1px solid #ddd; padding: 4px; font-size: 9px; }
+        .items-table th { background-color: #002A85; color: #fff; padding: 3px 4px; text-align: left; font-size: 8.5px; border: 1px solid #002A85; }
+        .items-table td { border: 1px solid #ddd; padding: 3px 4px; font-size: 9px; }
         .items-table tbody tr:nth-child(even) { background-color: #f9f9f9; }
         .items-table tbody tr { page-break-inside: avoid; }
-        .items-table tfoot td { border-top: 2px solid #002A85; font-weight: bold; background-color: #f0f3f8; padding: 4px; }
+        .items-table tfoot td { border-top: 2px solid #002A85; font-weight: bold; background-color: #f0f3f8; padding: 3px 4px; }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
 
-        .signature-box { margin-top: 30px; text-align: center; font-size: 9px; page-break-inside: avoid; }
+        .totals-table { width: 100%; border: 1px solid #ddd; border-collapse: collapse; }
+        .totals-table td { padding: 3px 8px; font-size: 9.5px; border-bottom: 1px solid #eee; }
+        .totals-table td:last-child { text-align: right; }
+        .totals-table .grand-total td { font-weight: bold; font-size: 10.5px; border-top: 2px solid #002A85; border-bottom: none; }
+        .totals-table .eoe td { font-size: 8px; color: #999; text-align: right; border-bottom: none; padding-top: 0; }
+
+        .signature-box { margin-top: 4px; text-align: center; font-size: 9px; page-break-inside: avoid; }
         .signature-box .for-company { font-weight: bold; font-size: 10px; margin-top: 3px; }
         .signature-box .stamp-note { margin-top: 5px; color: #999; }
         .signature-box .signatory-line { margin-top: 3px; }
 
-        .footer { margin-top: 4px; text-align: left; color: #999; font-size: 9px; border-top: 1px solid #ddd; padding-top: 4px; }
+        .footer { margin-top: 4px; text-align: center; color: #999; font-size: 9px; border-top: 1px solid #ddd; padding-top: 4px; }
     </style>
 </head>
 <body>
@@ -70,40 +75,71 @@
     </div>
 
     <div style="margin-bottom: 8px;">
-        <div style="float: left; width: 50%;">
+        <div style="float: left; width: 52%;">
             <div class="info-section" style="margin-right: 8px;">
-                <div class="box-title">Ship From (Consignor)</div>
-                <table>
-                    <tr>
-                        <td class="label">Godown</td>
-                        <td>{{ $transfer->sourceGodown->code }} - {{ $transfer->sourceGodown->name }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Address</td>
-                        <td>{{ $transfer->sourceGodown->address ?? '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Phone</td>
-                        <td>{{ $transfer->sourceGodown->contact_phone ?? '-' }}</td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-        <div style="float: left; width: 50%;">
-            <div class="info-section" style="margin-left: 8px;">
                 <div class="box-title">Ship To (Consignee)</div>
                 <table>
                     <tr>
-                        <td class="label">Godown</td>
-                        <td>{{ $transfer->destGodown->code }} - {{ $transfer->destGodown->name }}</td>
+                        <td class="label">M/S</td>
+                        <td colspan="3">{{ $transfer->destGodown->code }} - {{ $transfer->destGodown->name }}</td>
                     </tr>
                     <tr>
                         <td class="label">Address</td>
-                        <td>{{ $transfer->destGodown->address ?? '-' }}</td>
+                        <td colspan="3">{{ $transfer->destGodown->address ?? '-' }}</td>
                     </tr>
                     <tr>
                         <td class="label">Phone</td>
                         <td>{{ $transfer->destGodown->contact_phone ?? '-' }}</td>
+                        <td class="label">GSTIN</td>
+                        <td>{{ $companyGstin ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Place of Supply</td>
+                        <td colspan="3">-</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div style="float: left; width: 48%;">
+            <div class="info-section" style="margin-left: 8px;">
+                <div class="box-title">Shipment Detail</div>
+                <table>
+                    <tr>
+                        <td class="label">Challan No.</td>
+                        <td>{{ $transfer->transfer_number }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Challan Date</td>
+                        <td>{{ $transfer->created_at->format('d-M-Y') }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Ship From</td>
+                        <td>
+                            {{ $transfer->sourceGodown->code }} - {{ $transfer->sourceGodown->name }}
+                            @if($transfer->sourceGodown->address)
+                                <br><span style="font-weight: normal; color: #666;">{{ $transfer->sourceGodown->address }}</span>
+                            @endif
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">L.R. No.</td>
+                        <td>{{ $transfer->lr_no ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">E-Way No.</td>
+                        <td>{{ $transfer->eway_no ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Transport</td>
+                        <td>{{ $transfer->transport_name ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Transport ID</td>
+                        <td>{{ $transfer->transport_id ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Vehicle Number</td>
+                        <td>{{ $transfer->vehicle_no ?? '-' }}</td>
                     </tr>
                 </table>
             </div>
@@ -111,38 +147,44 @@
         <div class="clear"></div>
     </div>
 
-    <div class="info-section" style="margin-bottom: 8px;">
-        <div class="box-title">Transfer Detail</div>
-        <table>
-            <tr>
-                <td class="label" style="width: 110px;">Transfer No.</td>
-                <td>{{ $transfer->transfer_number }}</td>
-                <td class="label" style="width: 80px;">Date</td>
-                <td>{{ $transfer->created_at->format('d-M-Y') }}</td>
-                <td class="label" style="width: 60px;">Status</td>
-                <td class="text-capitalize">{{ ucfirst($transfer->status) }}</td>
-            </tr>
-        </table>
-    </div>
-
     <table class="items-table">
         <thead>
             <tr>
-                <th style="width: 28px;">Sr.<br>No.</th>
-                <th>Name of Product</th>
-                <th style="width: 70px;">HSN/SAC</th>
-                <th class="text-right" style="width: 70px;">Quantity</th>
-                <th style="width: 60px;">Unit</th>
+                <th rowspan="2" style="width: 24px;">Sr.<br>No.</th>
+                <th rowspan="2">Name of Product / Service</th>
+                <th rowspan="2" style="width: 55px;">HSN/SAC</th>
+                <th rowspan="2" class="text-right" style="width: 45px;">Qty</th>
+                <th rowspan="2" style="width: 32px;">Unit</th>
+                <th rowspan="2" class="text-right" style="width: 55px;">Rate</th>
+                <th rowspan="2" class="text-right" style="width: 65px;">Taxable Value</th>
+                <th colspan="2" class="text-center">CGST</th>
+                <th colspan="2" class="text-center">SGST</th>
+                <th rowspan="2" class="text-right" style="width: 65px;">Total</th>
+            </tr>
+            <tr>
+                <th class="text-right" style="width: 35px;">%</th>
+                <th class="text-right" style="width: 55px;">Amount</th>
+                <th class="text-right" style="width: 35px;">%</th>
+                <th class="text-right" style="width: 55px;">Amount</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($transfer->items as $i => $item)
+            @foreach($lines as $i => $line)
             <tr>
                 <td>{{ $i + 1 }}</td>
-                <td>{{ $item->sku->name }}</td>
-                <td>{{ $item->sku->hsn_code ?? '-' }}</td>
-                <td class="text-right">{{ number_format($item->quantity, $item->quantity == intval($item->quantity) ? 0 : 3) }}</td>
-                <td>{{ $item->sku->unit_of_measure }}</td>
+                <td>
+                    {{ $line->sku->name }}
+                </td>
+                <td>{{ $line->hsn ?? '-' }}</td>
+                <td class="text-right">{{ number_format($line->quantity, $line->quantity == intval($line->quantity) ? 0 : 3) }}</td>
+                <td>{{ $line->sku->unit_of_measure }}</td>
+                <td class="text-right">{{ number_format($line->rate, 2) }}</td>
+                <td class="text-right">{{ number_format($line->taxable, 2) }}</td>
+                <td class="text-right">{{ number_format($line->cgst_rate, 2) }}</td>
+                <td class="text-right">{{ number_format($line->cgst_amount, 2) }}</td>
+                <td class="text-right">{{ number_format($line->sgst_rate, 2) }}</td>
+                <td class="text-right">{{ number_format($line->sgst_amount, 2) }}</td>
+                <td class="text-right">{{ number_format($line->total, 2) }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -151,32 +193,67 @@
                 <td colspan="3" class="text-right">Total</td>
                 <td class="text-right">{{ number_format($transfer->items->sum('quantity'), 0) }}</td>
                 <td></td>
+                <td></td>
+                <td class="text-right">{{ number_format($taxableTotal, 2) }}</td>
+                <td></td>
+                <td class="text-right">{{ number_format($cgstTotal, 2) }}</td>
+                <td></td>
+                <td class="text-right">{{ number_format($sgstTotal, 2) }}</td>
+                <td class="text-right">{{ number_format($grandTotal, 2) }}</td>
             </tr>
         </tfoot>
     </table>
 
     <div style="margin-top: 5px;">
         <div style="float: left; width: 58%;">
-            @if($transfer->notes)
             <div class="info-section" style="margin-right: 10px;">
-                <div class="box-title">Notes</div>
-                <div style="padding: 6px 8px; font-size: 9.5px;">{{ $transfer->notes }}</div>
+                <div class="box-title">Total in Words</div>
+                <div style="padding: 6px 8px; font-size: 9.5px;">{{ $amountInWords }}</div>
             </div>
-            @endif
-            <div class="info-section" style="margin-right: 10px; @if($transfer->notes) margin-top: 8px; @endif">
+            <div class="info-section" style="margin-right: 10px; margin-top: 8px;">
                 <div class="box-title">Terms and Conditions</div>
                 <div style="padding: 6px 8px; font-size: 8.5px; line-height: 1.6;">
-                    1. This is a Stock Transfer Challan for internal movement of goods between godowns of {{ $companyName }}.<br>
-                    2. This is not a sale document and no tax invoice is applicable.<br>
+                    1. This is a Stock Transfer Challan issued for movement of goods between godowns of {{ $companyName }} and is not a tax invoice.<br>
+                    2. Our responsibility ceases as soon as the goods leave the source godown.<br>
                     3. Please verify the quantity and condition of goods on receipt at the destination godown.
                 </div>
             </div>
-            <div class="footer" style="margin-right: 10px;">
+            <div class="footer" style="text-align: left; margin-right: 10px;">
                 Generated on {{ now()->format('d M Y') }} at {{ now()->format('H:i') }} IST
             </div>
         </div>
         <div style="float: left; width: 42%;">
             <div style="margin-left: 10px;">
+                <table class="totals-table">
+                    <tr>
+                        <td>Taxable Amount</td>
+                        <td>{{ \App\Support\Money::inr($taxableTotal) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Add: CGST</td>
+                        <td>{{ \App\Support\Money::inr($cgstTotal) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Add: SGST</td>
+                        <td>{{ \App\Support\Money::inr($sgstTotal) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Total Tax</td>
+                        <td>{{ \App\Support\Money::inr($cgstTotal + $sgstTotal) }}</td>
+                    </tr>
+                    <tr class="grand-total">
+                        <td>Total Amount After Tax</td>
+                        <td>{{ \App\Support\Money::inr($grandTotal) }}</td>
+                    </tr>
+                    <tr class="eoe">
+                        <td colspan="2">(E &amp; O.E.)</td>
+                    </tr>
+                    <tr>
+                        <td>GST Payable on Reverse Charge</td>
+                        <td>N.A.</td>
+                    </tr>
+                </table>
+
                 <div class="signature-box">
                     <div>Certified that the particulars given above are true and correct.</div>
                     <div class="for-company">For {{ $companyName }}</div>

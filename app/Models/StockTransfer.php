@@ -13,6 +13,8 @@ class StockTransfer extends Model
     protected $fillable = [
         'transfer_number', 'source_godown_id', 'dest_godown_id',
         'status', 'created_by', 'resolved_by', 'notes', 'resolved_at',
+        'vehicle_no', 'driver_name', 'driver_phone',
+        'lr_no', 'eway_no', 'transport_name', 'transport_id',
     ];
 
     protected function casts(): array

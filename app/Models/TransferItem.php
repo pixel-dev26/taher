@@ -9,7 +9,7 @@ class TransferItem extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['stock_transfer_id', 'sku_id', 'quantity'];
+    protected $fillable = ['stock_transfer_id', 'sku_id', 'quantity', 'unit_price', 'hsn_code'];
 
     protected function casts(): array
     {

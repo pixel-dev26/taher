@@ -110,17 +110,47 @@ class PdfService
 
     /**
      * A Road/Delivery Challan for an inter-godown Stock Transfer — same
-     * document family as the sales Delivery Challan above, but between two
-     * of the company's own godowns rather than to a customer, so it carries
-     * no price/tax columns (not a sale) and both ends are "Ship From" /
-     * "Ship To" godowns instead of a company + a customer.
+     * document family, layout and fields as the sales Delivery Challan
+     * above (including the Rate / Taxable Value / GST columns), but both
+     * ends are "Ship From" / "Ship To" godowns of the same company rather
+     * than a company + a customer.
      */
     public function generateTransferChallanPdf(StockTransfer $transfer): PdfDocument
     {
         $transfer->load(['items.sku', 'sourceGodown', 'destGodown']);
 
+        $gstRate = (float) Setting::get('default_gst_rate', 18);
+        $halfRate = $gstRate / 2;
+
+        $lines = $transfer->items->map(function ($item) use ($halfRate) {
+            $quantity = (float) $item->quantity;
+            $rate = $item->unit_price !== null ? (float) $item->unit_price : 0.0;
+            $taxable = $quantity * $rate;
+            $cgstAmount = round($taxable * $halfRate / 100, 2);
+            $sgstAmount = round($taxable * $halfRate / 100, 2);
+
+            return (object) [
+                'sku' => $item->sku,
+                'hsn' => $item->hsn_code ?: $item->sku->hsn_code,
+                'quantity' => $quantity,
+                'rate' => $rate,
+                'taxable' => $taxable,
+                'cgst_rate' => $halfRate,
+                'cgst_amount' => $cgstAmount,
+                'sgst_rate' => $halfRate,
+                'sgst_amount' => $sgstAmount,
+                'total' => $taxable + $cgstAmount + $sgstAmount,
+            ];
+        });
+
+        $taxableTotal = $lines->sum('taxable');
+        $cgstTotal = $lines->sum('cgst_amount');
+        $sgstTotal = $lines->sum('sgst_amount');
+        $grandTotal = $lines->sum('total');
+
         $data = [
             'transfer' => $transfer,
+            'lines' => $lines,
             'companyName' => Setting::get('company_name', 'Company Name'),
             'companyLogo' => Setting::get('company_logo'),
             'companyAddress' => Setting::get('company_address'),
@@ -128,6 +158,11 @@ class PdfService
             'companyFax' => Setting::get('company_fax'),
             'companyEmail' => Setting::get('company_email'),
             'companyGstin' => Setting::get('company_gstin'),
+            'taxableTotal' => $taxableTotal,
+            'cgstTotal' => $cgstTotal,
+            'sgstTotal' => $sgstTotal,
+            'grandTotal' => $grandTotal,
+            'amountInWords' => Money::words($grandTotal),
         ];
 
         $pdf = Pdf::loadView('pdf.transfer-challan', $data);

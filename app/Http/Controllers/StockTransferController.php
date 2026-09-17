@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\InsufficientStockException;
 use App\Http\Requests\StoreStockTransferRequest;
 use App\Models\Godown;
+use App\Models\Sku;
 use App\Models\StockTransfer;
 use App\Models\TransferItem;
 use App\Services\NumberGenerator;
@@ -60,6 +61,13 @@ class StockTransferController extends Controller
                     'status' => 'pending',
                     'created_by' => auth()->id(),
                     'notes' => $request->notes,
+                    'vehicle_no' => $request->vehicle_no,
+                    'driver_name' => $request->driver_name,
+                    'driver_phone' => $request->driver_phone,
+                    'lr_no' => $request->lr_no,
+                    'eway_no' => $request->eway_no,
+                    'transport_name' => $request->transport_name,
+                    'transport_id' => $request->transport_id,
                 ]));
 
                 foreach ($request->items as $item) {
@@ -67,7 +75,10 @@ class StockTransferController extends Controller
                         'stock_transfer_id' => $transfer->id,
                         'sku_id' => $item['sku_id'],
                         'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
+                        'hsn_code' => $item['hsn_code'],
                     ]);
+                    $this->backfillHsnCode($item['sku_id'], $item['hsn_code']);
                 }
 
                 $transfer->load(['items.sku', 'sourceGodown']);
@@ -97,6 +108,21 @@ class StockTransferController extends Controller
     {
         return $this->pdfService->generateTransferChallanPdf($stockTransfer)
             ->download("{$stockTransfer->transfer_number}-challan.pdf");
+    }
+
+    /**
+     * The Products catalog is the long-term home for a SKU's HSN code, but
+     * most don't have one set yet — this fills it in from whatever was first
+     * typed on a transfer, so the same product doesn't need retyping on the
+     * next one. Never overwrites a value the Products screen already has.
+     */
+    private function backfillHsnCode(int $skuId, string $hsnCode): void
+    {
+        $sku = Sku::find($skuId);
+
+        if ($sku && !$sku->hsn_code) {
+            $sku->update(['hsn_code' => $hsnCode]);
+        }
     }
 
     /** "GIP-001 x 40, GIP-002 x 20" — a readable Activity Log summary. */

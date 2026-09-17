@@ -21,6 +21,15 @@ class StoreStockTransferRequest extends FormRequest
             'items' => 'required|array|min:1',
             'items.*.sku_id' => 'required|exists:skus,id',
             'items.*.quantity' => 'required|numeric|gt:0',
+            'items.*.unit_price' => 'required|numeric|min:0|max:9999999999',
+            'items.*.hsn_code' => 'required|string|max:20',
+            'vehicle_no' => 'nullable|string|max:50',
+            'driver_name' => 'nullable|string|max:255',
+            'driver_phone' => 'nullable|string|max:20',
+            'lr_no' => 'nullable|string|max:100',
+            'eway_no' => 'nullable|string|max:50',
+            'transport_name' => 'nullable|string|max:255',
+            'transport_id' => 'nullable|string|max:100',
             'notes' => 'nullable|string|max:1000',
         ];
     }
@@ -29,6 +38,9 @@ class StoreStockTransferRequest extends FormRequest
     {
         return [
             'source_godown_id.different' => 'Source and destination godowns must be different.',
+            'items.*.unit_price.required' => 'Enter the rate per unit for each item.',
+            'items.*.unit_price.min' => 'Rate cannot be negative.',
+            'items.*.hsn_code.required' => 'Enter the HSN code for each item.',
         ];
     }
 
