@@ -7,6 +7,12 @@
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #333; padding: 4px 6px; }
         th { background-color: #002A85; color: #fff; text-align: left; }
+        thead { display: table-header-group; }
+        /* No rowspans: dompdf can't carry a spanned cell across a page break,
+           so a multi-line sheet that straddled a page lost its header cells
+           and its lines shifted under the wrong columns. */
+        tbody tr { page-break-inside: avoid; }
+        td.cont { color: #999; }
         .text-right { text-align: right; }
         h2 { color: #002A85; }
         .letterhead { text-align: center; margin-bottom: 10px; }
@@ -38,18 +44,26 @@
         <tbody>
             @foreach($sheets as $sheet)
                 @foreach($sheet->items as $i => $item)
+                @php $qty = (float) $item->quantity; @endphp
                 <tr>
                     @if($i === 0)
-                    <td rowspan="{{ $sheet->items->count() }}">{{ $sheet->ds_number }}</td>
-                    <td rowspan="{{ $sheet->items->count() }}">{{ $sheet->godown->name }}</td>
-                    <td rowspan="{{ $sheet->items->count() }}">{{ $sheet->creator->name }}</td>
-                    <td rowspan="{{ $sheet->items->count() }}">{{ $sheet->customer_name ?? '-' }}</td>
-                    <td rowspan="{{ $sheet->items->count() }}">{{ $sheet->created_at->format('d/m/Y') }}</td>
-                    <td rowspan="{{ $sheet->items->count() }}">{{ ucfirst($sheet->status) }}</td>
+                    <td>{{ $sheet->ds_number }}</td>
+                    <td>{{ $sheet->godown->name }}</td>
+                    <td>{{ $sheet->creator->name }}</td>
+                    <td>{{ $sheet->customer_name ?? '-' }}</td>
+                    <td>{{ $sheet->created_at->format('d/m/Y') }}</td>
+                    <td>{{ ucfirst($sheet->status) }}</td>
+                    @else
+                    <td class="cont">{{ $sheet->ds_number }}</td>
+                    <td class="cont"></td>
+                    <td class="cont"></td>
+                    <td class="cont"></td>
+                    <td class="cont"></td>
+                    <td class="cont"></td>
                     @endif
                     <td>{{ $item->sku->code }}</td>
                     <td>{{ $item->sku->name }}</td>
-                    <td class="text-right">{{ number_format($item->quantity, 0) }}</td>
+                    <td class="text-right">{{ number_format($qty, $qty == intval($qty) ? 0 : 3) }}</td>
                 </tr>
                 @endforeach
             @endforeach

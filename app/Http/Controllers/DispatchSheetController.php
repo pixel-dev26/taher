@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\InsufficientStockException;
+use App\Http\Controllers\Concerns\SanitizesFilters;
 use App\Http\Requests\StoreDispatchSheetRequest;
 use App\Http\Requests\UpdateDispatchSheetRequest;
 use App\Models\DispatchSheet;
@@ -14,10 +15,12 @@ use App\Services\PdfService;
 use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class DispatchSheetController extends Controller
 {
+    use SanitizesFilters;
+
     public function __construct(
         private StockService $stockService,
         private PdfService $pdfService
@@ -37,9 +40,15 @@ class DispatchSheetController extends Controller
      */
     public function index(Request $request)
     {
-        $tab = in_array($request->get('tab'), ['to-send', 'mine', 'history'], true)
-            ? $request->get('tab')
-            : 'to-send';
+        $filters = $this->filters($request, [
+            'tab' => 'nullable|string|in:to-send,mine,history',
+            'status' => 'nullable|string|in:pending,dispatched,cancelled',
+            'godown_id' => 'nullable|integer|exists:godowns,id',
+            'date_from' => 'nullable|date_format:Y-m-d',
+            'date_to' => 'nullable|date_format:Y-m-d',
+        ]);
+
+        $tab = $filters['tab'] ?? 'to-send';
 
         $godowns = Godown::active()->get();
 
@@ -52,18 +61,18 @@ class DispatchSheetController extends Controller
                 $query->where('created_by', auth()->id());
             }
 
-            if ($request->filled('status')) {
-                $query->where('status', $request->status);
+            if (! empty($filters['status'])) {
+                $query->where('status', $filters['status']);
             }
 
-            if ($request->filled('godown_id')) {
-                $query->where('godown_id', $request->godown_id);
+            if (! empty($filters['godown_id'])) {
+                $query->where('godown_id', $filters['godown_id']);
             }
 
             // The register used to render blank until both dates were given.
             // Default to the last 30 days so the tab always shows something.
-            $from = $request->get('date_from', $tab === 'history' ? today()->subDays(30)->format('Y-m-d') : null);
-            $to = $request->get('date_to');
+            $from = $filters['date_from'] ?? ($tab === 'history' ? today()->subDays(30)->format('Y-m-d') : null);
+            $to = $filters['date_to'] ?? null;
 
             if ($from) {
                 $query->whereDate('created_at', '>=', $from);
@@ -99,10 +108,6 @@ class DispatchSheetController extends Controller
                 // added in the loop below, so logging now would only ever
                 // capture the header, never which products are being sent.
                 // One complete entry is written manually once items exist.
-                // pdf_path is set to its final value up front (same pattern
-                // PdfService uses) so that call's own ->update() further down
-                // finds nothing dirty and doesn't add a second, spurious
-                // "updated" entry for a path that isn't actually changing.
                 $sheet = DispatchSheet::withoutEvents(fn () => DispatchSheet::create([
                     'ds_number' => $dsNumber,
                     'godown_id' => $request->godown_id,
@@ -122,7 +127,6 @@ class DispatchSheetController extends Controller
                     'transport_name' => $request->transport_name,
                     'transport_id' => $request->transport_id,
                     'notes' => $request->notes,
-                    'pdf_path' => "dispatch-sheets/{$dsNumber}.pdf",
                 ]));
 
                 foreach ($request->items as $item) {
@@ -139,9 +143,6 @@ class DispatchSheetController extends Controller
                 $sheet->load(['items.sku', 'godown']);
                 $this->stockService->reserveStock($sheet);
 
-                // Generate PDF
-                $this->pdfService->generateDispatchPdf($sheet);
-
                 $sheet->logCreatedWithItems(['items' => $this->itemsSummary($sheet->items)]);
 
                 return $sheet;
@@ -149,17 +150,20 @@ class DispatchSheetController extends Controller
 
             return redirect()->route('dispatch-sheets.show', $sheet)
                 ->with('success', "Dispatch Sheet {$sheet->ds_number} created successfully.");
-        } catch (InsufficientStockException $e) {
+        } catch (InsufficientStockException | \RuntimeException $e) {
             return back()->withInput()->with('error', $e->getMessage());
-        } catch (\Exception $e) {
-            return back()->withInput()->with('error', 'Failed to create dispatch sheet: ' . $e->getMessage());
+        } catch (Throwable $e) {
+            report($e);
+            return back()->withInput()->with('error', 'Failed to create the dispatch sheet. Please try again; if it keeps happening, contact your administrator.');
         }
     }
 
     public function show(DispatchSheet $dispatchSheet)
     {
         $dispatchSheet->load(['items.sku', 'godown', 'creator', 'dispatcher']);
-        return view('dispatch-sheets.show', compact('dispatchSheet'));
+        $challanIssue = $this->pdfService->challanBlocker($dispatchSheet);
+
+        return view('dispatch-sheets.show', compact('dispatchSheet', 'challanIssue'));
     }
 
     public function edit(DispatchSheet $dispatchSheet)
@@ -178,13 +182,26 @@ class DispatchSheetController extends Controller
     {
         try {
             DB::transaction(function () use ($request, $dispatchSheet) {
+                // Re-read under lock. The FormRequest already checked the
+                // status, but on the instance route binding loaded before the
+                // transaction — a confirm landing in between would otherwise
+                // let this edit rewrite a sheet that has already gone out and
+                // leave its extra reservation stuck forever.
+                $sheet = DispatchSheet::lockForUpdate()->find($dispatchSheet->id);
+
+                if (! $sheet || $sheet->status !== 'pending') {
+                    throw new \RuntimeException('This dispatch sheet has already been processed and can no longer be edited.');
+                }
+
                 $headerFields = [
                     'customer_name', 'customer_phone', 'customer_gstin', 'place_of_supply',
                     'delivery_address', 'delivery_date', 'vehicle_no', 'driver_name',
                     'driver_phone', 'lr_no', 'eway_no', 'transport_name', 'transport_id', 'notes',
                 ];
 
-                $oldItems = $dispatchSheet->items->pluck('quantity', 'sku_id')
+                $sheet->load(['items.sku', 'godown']);
+
+                $oldItems = $sheet->items->pluck('quantity', 'sku_id')
                     ->map(fn($q) => (float)$q)->toArray();
 
                 // Snapshot before the edit, for one manual Activity Log entry
@@ -196,13 +213,13 @@ class DispatchSheetController extends Controller
                 // string here — otherwise two fresh instances of the same
                 // unchanged date would never compare equal, and logChange()'s
                 // "skip when nothing changed" check would never trigger.
-                $before = array_map([$this, 'normalizeForLog'], $dispatchSheet->only($headerFields));
-                $before['items'] = $this->itemsSummary($dispatchSheet->items()->with('sku')->get());
+                $before = array_map([$this, 'normalizeForLog'], $sheet->only($headerFields));
+                $before['items'] = $this->itemsSummary($sheet->items);
 
                 // Suppress the automatic entry for this header-only update —
                 // it would otherwise log just the header fields under its own
                 // separate, incomplete entry.
-                DispatchSheet::withoutEvents(fn () => $dispatchSheet->update([
+                DispatchSheet::withoutEvents(fn () => $sheet->update([
                     'customer_name' => $request->customer_name,
                     'customer_phone' => $request->customer_phone,
                     'customer_gstin' => $request->customer_gstin,
@@ -220,10 +237,10 @@ class DispatchSheetController extends Controller
                 ]));
 
                 // Delete old items and create new ones
-                $dispatchSheet->items()->delete();
+                $sheet->items()->delete();
                 foreach ($request->items as $item) {
                     DispatchSheetItem::create([
-                        'dispatch_sheet_id' => $dispatchSheet->id,
+                        'dispatch_sheet_id' => $sheet->id,
                         'sku_id' => $item['sku_id'],
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['unit_price'],
@@ -235,40 +252,43 @@ class DispatchSheetController extends Controller
                 $newItems = collect($request->items)->pluck('quantity', 'sku_id')
                     ->map(fn($q) => (float)$q)->toArray();
 
-                $dispatchSheet->load(['items.sku', 'godown']);
-                $this->stockService->updateReservation($dispatchSheet, $oldItems, $newItems);
+                $sheet->load(['items.sku', 'godown']);
+                $this->stockService->updateReservation($sheet, $oldItems, $newItems);
 
-                // Regenerate PDF
-                $this->pdfService->generateDispatchPdf($dispatchSheet);
-
-                $after = array_map([$this, 'normalizeForLog'], $dispatchSheet->only($headerFields));
-                $after['items'] = $this->itemsSummary($dispatchSheet->items);
-                $dispatchSheet->logChange('updated', $before, $after);
+                $after = array_map([$this, 'normalizeForLog'], $sheet->only($headerFields));
+                $after['items'] = $this->itemsSummary($sheet->items);
+                $sheet->logChange('updated', $before, $after);
             });
 
             return redirect()->route('dispatch-sheets.show', $dispatchSheet)
                 ->with('success', 'Dispatch sheet updated successfully.');
-        } catch (InsufficientStockException $e) {
+        } catch (InsufficientStockException | \RuntimeException $e) {
             return back()->withInput()->with('error', $e->getMessage());
-        } catch (\Exception $e) {
-            return back()->withInput()->with('error', 'Failed to update: ' . $e->getMessage());
+        } catch (Throwable $e) {
+            report($e);
+            return back()->withInput()->with('error', 'Failed to update the dispatch sheet. Please try again; if it keeps happening, contact your administrator.');
         }
     }
 
     public function cancel(Request $request, DispatchSheet $dispatchSheet)
     {
-        if ($dispatchSheet->status !== 'pending') {
-            return back()->with('error', 'Only pending dispatch sheets can be cancelled.');
-        }
-
         $request->validate(['cancel_reason' => 'required|string|max:1000']);
 
         try {
             DB::transaction(function () use ($request, $dispatchSheet) {
-                $dispatchSheet->load('items.sku');
-                $this->stockService->releaseStock($dispatchSheet);
+                // Re-read under lock (see update()): cancelling a sheet that
+                // was confirmed a moment ago would release a reservation that
+                // no longer exists and eat another sheet's reserved stock.
+                $sheet = DispatchSheet::lockForUpdate()->find($dispatchSheet->id);
 
-                $dispatchSheet->update([
+                if (! $sheet || $sheet->status !== 'pending') {
+                    throw new \RuntimeException('Only pending dispatch sheets can be cancelled — this one has already been processed.');
+                }
+
+                $sheet->load('items.sku');
+                $this->stockService->releaseStock($sheet);
+
+                $sheet->update([
                     'status' => 'cancelled',
                     'cancel_reason' => $request->cancel_reason,
                     'cancelled_at' => now(),
@@ -277,35 +297,36 @@ class DispatchSheetController extends Controller
 
             return redirect()->route('dispatch-sheets.show', $dispatchSheet)
                 ->with('success', 'Dispatch sheet cancelled. Stock has been released.');
-        } catch (\Exception $e) {
-            return back()->with('error', 'Failed to cancel: ' . $e->getMessage());
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (Throwable $e) {
+            report($e);
+            return back()->with('error', 'Failed to cancel the dispatch sheet. Please try again; if it keeps happening, contact your administrator.');
         }
     }
 
+    /**
+     * Generated fresh on every download and streamed straight back — never
+     * written to disk. A copy on the public disk was reachable at a
+     * predictable /storage URL with no login, and went stale the moment a
+     * sheet was confirmed or cancelled.
+     */
     public function downloadPdf(DispatchSheet $dispatchSheet)
     {
-        // Always regenerate rather than reusing the stored file: the sheet's
-        // status, dispatch timestamp, or cancellation reason can all change
-        // after the PDF was first generated (on create/edit), and a cached
-        // file would otherwise go stale — e.g. still showing "Pending" on a
-        // sheet that has since been sent out or cancelled.
-        $this->pdfService->generateDispatchPdf($dispatchSheet);
-        $dispatchSheet->refresh();
-
-        if (!Storage::disk('public')->exists($dispatchSheet->pdf_path)) {
-            abort(404, 'PDF not found.');
-        }
-
-        return Storage::disk('public')->download($dispatchSheet->pdf_path, "{$dispatchSheet->ds_number}.pdf");
+        return $this->pdfService->generateDispatchPdf($dispatchSheet)
+            ->download("{$dispatchSheet->ds_number}.pdf");
     }
 
     /**
      * A GST-compliant Road/Delivery Challan for this dispatch — a separate
-     * document from the plain Dispatch Sheet PDF above, generated fresh on
-     * every download rather than cached to disk.
+     * document from the plain Dispatch Sheet PDF above.
      */
     public function downloadChallan(DispatchSheet $dispatchSheet)
     {
+        if ($issue = $this->pdfService->challanBlocker($dispatchSheet)) {
+            return back()->with('error', $issue);
+        }
+
         return $this->pdfService->generateChallanPdf($dispatchSheet)
             ->download("{$dispatchSheet->ds_number}-challan.pdf");
     }
@@ -325,12 +346,19 @@ class DispatchSheetController extends Controller
         }
     }
 
-    /** "GIP-001 x 40, GIP-002 x 20" — a readable Activity Log summary. */
+    /**
+     * "GIP-001 x 40 @ 480.00 [HSN 7306], ..." — a readable Activity Log
+     * summary. Rate and HSN are included so an edit that changes only the
+     * price on a line (what the challan totals come from) still produces a
+     * differing snapshot and gets logged.
+     */
     private function itemsSummary($items): string
     {
         return collect($items)->map(function ($item) {
             $qty = rtrim(rtrim(number_format((float) $item->quantity, 3, '.', ''), '0'), '.');
-            return "{$item->sku->code} x {$qty}";
+            $rate = $item->unit_price === null ? '-' : number_format((float) $item->unit_price, 2, '.', '');
+            $hsn = $item->hsn_code ?: '-';
+            return "{$item->sku->code} x {$qty} @ {$rate} [HSN {$hsn}]";
         })->implode(', ');
     }
 

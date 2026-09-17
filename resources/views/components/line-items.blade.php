@@ -101,15 +101,15 @@
                 </button>
             </div>
 
-            @if($errors->has("items.{$i}.quantity") || ($showPrice && $errors->has("items.{$i}.unit_price")) || ($showHsn && $errors->has("items.{$i}.hsn_code")))
-                <div class="li-error invalid-feedback d-block">
-                    {{ implode(' ', array_merge(
-                        $errors->get("items.{$i}.quantity"),
-                        $showPrice ? $errors->get("items.{$i}.unit_price") : [],
-                        $showHsn ? $errors->get("items.{$i}.hsn_code") : []
-                    )) }}
-                </div>
-            @endif
+            {{-- Always present so the script has somewhere to put a message;
+                 shown only when the server had something to say. --}}
+            <div class="li-error invalid-feedback d-block" @unless($rowInvalid) hidden @endunless>
+                {{ implode(' ', array_merge(
+                    $errors->get("items.{$i}.quantity"),
+                    $showPrice ? $errors->get("items.{$i}.unit_price") : [],
+                    $showHsn ? $errors->get("items.{$i}.hsn_code") : []
+                )) }}
+            </div>
         </div>
     @endforeach
 </div>
@@ -132,16 +132,19 @@
     <div class="text-danger small mb-3"><i class="bi bi-exclamation-circle me-1"></i>{{ $message }}</div>
 @enderror
 
-{{-- Cloned by public/js/line-items.js for each newly added product. --}}
+{{-- Cloned by public/js/line-items.js for each newly added product. Only the
+     numeric __I__ / __SKU_ID__ placeholders are substituted in the markup;
+     the product's code, name, unit, availability and HSN are filled in as
+     text by the script, so a product name can never be interpreted as HTML. --}}
 <template id="lineItemTemplate">
     <div class="line-item" id="item-row-__I__" data-sku-id="__SKU_ID__">
         <input type="hidden" name="items[__I__][sku_id]" value="__SKU_ID__">
 
         <div class="li-main">
-            <code class="li-code">__CODE__</code>
-            <div class="li-name">__NAME__</div>
+            <code class="li-code"></code>
+            <div class="li-name"></div>
             @if($showAvailable)
-                <div class="li-avail">Available: <strong>__AVAIL__</strong> __UOM__</div>
+                <div class="li-avail">Available: <strong class="li-avail-qty"></strong> <span class="li-uom"></span></div>
             @endif
             @if($showPrice)
                 <div class="li-avail li-amount">Amount: <strong>—</strong></div>
@@ -159,13 +162,13 @@
                            step="0.001"
                            @if(! $allowNegative) min="0.001" @endif
                            required>
-                    <span class="input-group-text">__UOM__</span>
+                    <span class="input-group-text li-uom"></span>
                 </div>
             </div>
 
             @if($showPrice)
                 <div class="li-price">
-                    <label class="cl-label" for="price-__I__">Price / __UOM__</label>
+                    <label class="cl-label" for="price-__I__">Price / <span class="li-uom"></span></label>
                     <div class="input-group">
                         <span class="input-group-text">₹</span>
                         <input type="number"
@@ -187,7 +190,6 @@
                            id="hsn-__I__"
                            name="items[__I__][hsn_code]"
                            class="form-control"
-                           value="__HSN__"
                            maxlength="20"
                            placeholder="e.g. 7306"
                            required>

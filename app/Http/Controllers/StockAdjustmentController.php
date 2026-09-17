@@ -89,10 +89,11 @@ class StockAdjustmentController extends Controller
 
             return redirect()->route('stock-adjustments.show', $adjustment)
                 ->with('success', "Adjustment {$adjustment->adjustment_number} created successfully.");
-        } catch (InsufficientStockException $e) {
+        } catch (InsufficientStockException | \RuntimeException $e) {
             return back()->withInput()->with('error', $e->getMessage());
-        } catch (\Exception $e) {
-            return back()->withInput()->with('error', 'Failed to create adjustment: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->withInput()->with('error', 'Failed to create the adjustment. Please try again; if it keeps happening, contact your administrator.');
         }
     }
 

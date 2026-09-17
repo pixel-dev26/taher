@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\SanitizesFilters;
 use App\Models\Godown;
 use App\Models\Sku;
 use App\Models\StockRecord;
@@ -10,6 +11,8 @@ use Illuminate\Http\Request;
 
 class StockSearchController extends Controller
 {
+    use SanitizesFilters;
+
     public function __construct(private StockService $stockService)
     {
     }
@@ -26,10 +29,20 @@ class StockSearchController extends Controller
         $godowns = Godown::active()->get();
         $categories = Sku::distinct()->pluck('category')->sort();
 
+        // A date the calendar can't parse (a typo in a bookmarked URL) used
+        // to reach Carbon::parse() in the view and 500; fall back to today.
+        $valid = $this->filters($request, [
+            'date' => 'nullable|date_format:Y-m-d',
+            'godown_id' => 'nullable|integer|exists:godowns,id',
+            'search' => 'nullable|string|max:255',
+            'category' => 'nullable|string|max:100',
+            'hide_zero' => 'nullable|boolean',
+        ]);
+
         $today = today()->format('Y-m-d');
-        $date = $request->get('date') ?: $today;
+        $date = $valid['date'] ?? $today;
         $isToday = $date === $today;
-        $godownId = $request->get('godown_id');
+        $godownId = $valid['godown_id'] ?? null;
         $hideZero = $request->boolean('hide_zero');
 
         $query = Sku::active();

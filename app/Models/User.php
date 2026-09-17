@@ -6,6 +6,8 @@ use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -56,6 +58,25 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    /**
+     * After a password change, every other place this account is signed in
+     * (a "keep me signed in" cookie on a phone, an open tab elsewhere) must
+     * stop working — otherwise resetting a departed employee's password
+     * revokes nothing. Rotating remember_token kills every recaller cookie;
+     * dropping the other sessions rows kills every other live session.
+     */
+    public function invalidateOtherSessions(?string $exceptSessionId = null): void
+    {
+        $this->forceFill(['remember_token' => Str::random(60)])->saveQuietly();
+
+        if (config('session.driver') === 'database') {
+            DB::table(config('session.table', 'sessions'))
+                ->where('user_id', $this->id)
+                ->when($exceptSessionId, fn ($q) => $q->where('id', '!=', $exceptSessionId))
+                ->delete();
+        }
     }
 
     public function activityLogLabel(): string

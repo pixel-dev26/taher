@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Services\StockService;
 use App\Models\Sku;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreDispatchSheetRequest extends FormRequest
 {
@@ -16,10 +17,10 @@ class StoreDispatchSheetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'godown_id' => 'required|exists:godowns,id',
+            'godown_id' => ['required', Rule::exists('godowns', 'id')->where('is_active', 1)],
             'items' => 'required|array|min:1',
-            'items.*.sku_id' => 'required|exists:skus,id',
-            'items.*.quantity' => 'required|numeric|gt:0',
+            'items.*.sku_id' => ['required', Rule::exists('skus', 'id')->where('is_active', 1)],
+            'items.*.quantity' => 'required|numeric|gt:0|max:999999999',
             'items.*.unit_price' => 'required|numeric|min:0|max:9999999999',
             'items.*.hsn_code' => 'required|string|max:20',
             'customer_name' => 'nullable|string|max:255',
@@ -74,7 +75,9 @@ class StoreDispatchSheetRequest extends FormRequest
         return [
             'items.required' => 'At least one item is required.',
             'items.min' => 'At least one item is required.',
+            'godown_id.exists' => 'That godown is not active.',
             'items.*.sku_id.required' => 'Please select a SKU for each item.',
+            'items.*.sku_id.exists' => 'That product is not active.',
             'items.*.quantity.gt' => 'Quantity must be greater than 0.',
             'items.*.unit_price.required' => 'Enter the rate per unit for each item.',
             'items.*.unit_price.min' => 'Rate cannot be negative.',

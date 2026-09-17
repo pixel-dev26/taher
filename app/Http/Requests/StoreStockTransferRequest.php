@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Services\StockService;
 use App\Models\Sku;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreStockTransferRequest extends FormRequest
 {
@@ -16,11 +17,11 @@ class StoreStockTransferRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'source_godown_id' => 'required|exists:godowns,id|different:dest_godown_id',
-            'dest_godown_id' => 'required|exists:godowns,id',
+            'source_godown_id' => ['required', Rule::exists('godowns', 'id')->where('is_active', 1), 'different:dest_godown_id'],
+            'dest_godown_id' => ['required', Rule::exists('godowns', 'id')->where('is_active', 1)],
             'items' => 'required|array|min:1',
-            'items.*.sku_id' => 'required|exists:skus,id',
-            'items.*.quantity' => 'required|numeric|gt:0',
+            'items.*.sku_id' => ['required', Rule::exists('skus', 'id')->where('is_active', 1)],
+            'items.*.quantity' => 'required|numeric|gt:0|max:999999999',
             'items.*.unit_price' => 'required|numeric|min:0|max:9999999999',
             'items.*.hsn_code' => 'required|string|max:20',
             'vehicle_no' => 'nullable|string|max:50',
@@ -38,6 +39,9 @@ class StoreStockTransferRequest extends FormRequest
     {
         return [
             'source_godown_id.different' => 'Source and destination godowns must be different.',
+            'source_godown_id.exists' => 'That godown is not active.',
+            'dest_godown_id.exists' => 'That godown is not active.',
+            'items.*.sku_id.exists' => 'That product is not active.',
             'items.*.unit_price.required' => 'Enter the rate per unit for each item.',
             'items.*.unit_price.min' => 'Rate cannot be negative.',
             'items.*.hsn_code.required' => 'Enter the HSN code for each item.',
@@ -52,6 +56,12 @@ class StoreStockTransferRequest extends FormRequest
             $sourceGodownId = $this->input('source_godown_id');
             $items = $this->input('items', []);
             $stockService = app(StockService::class);
+
+            $skuIds = array_column($items, 'sku_id');
+            if (count($skuIds) !== count(array_unique($skuIds))) {
+                $validator->errors()->add('items', 'Duplicate SKUs are not allowed.');
+                return;
+            }
 
             foreach ($items as $index => $item) {
                 $available = $stockService->getAvailable($item['sku_id'], $sourceGodownId);

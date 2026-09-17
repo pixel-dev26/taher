@@ -48,8 +48,8 @@ trait LogsActivity
                     $before[$key] = '[hidden]';
                     $after[$key] = '[hidden]';
                 } else {
-                    $before[$key] = $model->getOriginal($key);
-                    $after[$key] = $model->getAttribute($key);
+                    $before[$key] = $model->activityLogValue($model->getOriginal($key));
+                    $after[$key] = $model->activityLogValue($model->getAttribute($key));
                 }
             }
 
@@ -107,6 +107,16 @@ trait LogsActivity
         }
 
         $this->recordActivity($action, $before, $after);
+    }
+
+    /**
+     * Cast datetimes come back as Carbon instances, which json_encode as UTC
+     * ISO strings — 5.5 hours off the IST times printed everywhere else in
+     * the log. Store them the way 'created' entries (raw columns) already do.
+     */
+    protected function activityLogValue($value)
+    {
+        return $value instanceof \DateTimeInterface ? $value->format('Y-m-d H:i:s') : $value;
     }
 
     /** Everything the automatic hooks would capture, for a caller building a manual entry. */

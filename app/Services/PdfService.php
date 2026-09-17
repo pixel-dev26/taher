@@ -8,11 +8,15 @@ use App\Models\StockTransfer;
 use App\Support\Money;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as PdfDocument;
-use Illuminate\Support\Facades\Storage;
 
 class PdfService
 {
-    public function generateDispatchPdf(DispatchSheet $sheet): string
+    /**
+     * The plain Dispatch Sheet. Generated on demand and streamed by the
+     * caller — nothing is written to disk (a cached copy on the public disk
+     * used to be downloadable at a predictable /storage URL with no login).
+     */
+    public function generateDispatchPdf(DispatchSheet $sheet): PdfDocument
     {
         $sheet->load(['items.sku', 'godown', 'creator']);
 
@@ -29,12 +33,38 @@ class PdfService
         $pdf = Pdf::loadView('pdf.dispatch-sheet', $data);
         $pdf->setPaper('A4', 'portrait');
 
-        $filename = "dispatch-sheets/{$sheet->ds_number}.pdf";
-        Storage::disk('public')->put($filename, $pdf->output());
+        return $pdf;
+    }
 
-        $sheet->update(['pdf_path' => $filename]);
+    /**
+     * Why a GST challan can't be produced for this document, or null when it
+     * can. Lines recorded before rates and HSN codes were captured would
+     * otherwise print as a certified "Rate 0.00 / ZERO RUPEES ONLY".
+     */
+    public function challanBlocker(DispatchSheet|StockTransfer $document): ?string
+    {
+        $document->loadMissing('items.sku');
 
-        return $filename;
+        $unpriced = $document->items->filter(fn ($item) => $item->unit_price === null)->count();
+        $noHsn = $document->items->filter(fn ($item) => ! ($item->hsn_code ?: $item->sku->hsn_code))->count();
+
+        if (! $unpriced && ! $noHsn) {
+            return null;
+        }
+
+        $parts = [];
+        if ($unpriced) {
+            $parts[] = "{$unpriced} line(s) have no rate recorded";
+        }
+        if ($noHsn) {
+            $parts[] = "{$noHsn} line(s) have no HSN code";
+        }
+
+        $advice = $document instanceof DispatchSheet && $document->status === 'pending'
+            ? 'Edit the dispatch to add them, then download the challan again.'
+            : 'These lines were recorded before rates and HSN codes were captured.';
+
+        return 'A GST challan cannot be generated: ' . implode(' and ', $parts) . '. ' . $advice;
     }
 
     /**
@@ -51,57 +81,7 @@ class PdfService
     {
         $sheet->load(['items.sku', 'godown', 'creator']);
 
-        $gstRate = (float) Setting::get('default_gst_rate', 18);
-        $halfRate = $gstRate / 2;
-
-        $lines = $sheet->items->map(function ($item) use ($halfRate) {
-            $quantity = (float) $item->quantity;
-            $rate = $item->unit_price !== null ? (float) $item->unit_price : 0.0;
-            $taxable = $quantity * $rate;
-            $cgstAmount = round($taxable * $halfRate / 100, 2);
-            $sgstAmount = round($taxable * $halfRate / 100, 2);
-
-            return (object) [
-                'sku' => $item->sku,
-                // The rate charged and the HSN code are both captured per
-                // dispatch line (not just read from the product catalog),
-                // since neither was tracked before this document existed —
-                // the product's own value is only a fallback for lines
-                // recorded before HSN capture was required.
-                'hsn' => $item->hsn_code ?: $item->sku->hsn_code,
-                'quantity' => $quantity,
-                'rate' => $rate,
-                'taxable' => $taxable,
-                'cgst_rate' => $halfRate,
-                'cgst_amount' => $cgstAmount,
-                'sgst_rate' => $halfRate,
-                'sgst_amount' => $sgstAmount,
-                'total' => $taxable + $cgstAmount + $sgstAmount,
-            ];
-        });
-
-        $taxableTotal = $lines->sum('taxable');
-        $cgstTotal = $lines->sum('cgst_amount');
-        $sgstTotal = $lines->sum('sgst_amount');
-        $grandTotal = $lines->sum('total');
-
-        $data = [
-            'sheet' => $sheet,
-            'lines' => $lines,
-            'companyName' => Setting::get('company_name', 'Company Name'),
-            'companyLogo' => Setting::get('company_logo'),
-            'companyAddress' => Setting::get('company_address'),
-            'companyPhone' => Setting::get('company_phone'),
-            'companyFax' => Setting::get('company_fax'),
-            'companyEmail' => Setting::get('company_email'),
-            'companyGstin' => Setting::get('company_gstin'),
-            'companyState' => Setting::get('company_state'),
-            'taxableTotal' => $taxableTotal,
-            'cgstTotal' => $cgstTotal,
-            'sgstTotal' => $sgstTotal,
-            'grandTotal' => $grandTotal,
-            'amountInWords' => Money::words($grandTotal),
-        ];
+        $data = ['sheet' => $sheet] + $this->challanFigures($sheet->items) + $this->companyDetails();
 
         $pdf = Pdf::loadView('pdf.delivery-challan', $data);
         $pdf->setPaper('A4', 'landscape');
@@ -120,18 +100,36 @@ class PdfService
     {
         $transfer->load(['items.sku', 'sourceGodown', 'destGodown']);
 
+        $data = ['transfer' => $transfer] + $this->challanFigures($transfer->items) + $this->companyDetails();
+
+        $pdf = Pdf::loadView('pdf.transfer-challan', $data);
+        $pdf->setPaper('A4', 'landscape');
+
+        return $pdf;
+    }
+
+    /**
+     * Every figure is rounded to paise as soon as it exists and every total
+     * is a sum of the printed line figures, so the lines, the footer row,
+     * the totals box and the amount in words can never disagree by a paisa.
+     */
+    private function challanFigures($items): array
+    {
         $gstRate = (float) Setting::get('default_gst_rate', 18);
         $halfRate = $gstRate / 2;
 
-        $lines = $transfer->items->map(function ($item) use ($halfRate) {
+        $lines = $items->map(function ($item) use ($halfRate) {
             $quantity = (float) $item->quantity;
             $rate = $item->unit_price !== null ? (float) $item->unit_price : 0.0;
-            $taxable = $quantity * $rate;
+            $taxable = round($quantity * $rate, 2);
             $cgstAmount = round($taxable * $halfRate / 100, 2);
             $sgstAmount = round($taxable * $halfRate / 100, 2);
 
             return (object) [
                 'sku' => $item->sku,
+                // The rate charged and the HSN code are both captured per
+                // line (not just read from the product catalog); the
+                // product's own HSN is only a fallback.
                 'hsn' => $item->hsn_code ?: $item->sku->hsn_code,
                 'quantity' => $quantity,
                 'rate' => $rate,
@@ -140,18 +138,28 @@ class PdfService
                 'cgst_amount' => $cgstAmount,
                 'sgst_rate' => $halfRate,
                 'sgst_amount' => $sgstAmount,
-                'total' => $taxable + $cgstAmount + $sgstAmount,
+                'total' => round($taxable + $cgstAmount + $sgstAmount, 2),
             ];
         });
 
-        $taxableTotal = $lines->sum('taxable');
-        $cgstTotal = $lines->sum('cgst_amount');
-        $sgstTotal = $lines->sum('sgst_amount');
-        $grandTotal = $lines->sum('total');
+        $taxableTotal = round($lines->sum('taxable'), 2);
+        $cgstTotal = round($lines->sum('cgst_amount'), 2);
+        $sgstTotal = round($lines->sum('sgst_amount'), 2);
+        $grandTotal = round($taxableTotal + $cgstTotal + $sgstTotal, 2);
 
-        $data = [
-            'transfer' => $transfer,
+        return [
             'lines' => $lines,
+            'taxableTotal' => $taxableTotal,
+            'cgstTotal' => $cgstTotal,
+            'sgstTotal' => $sgstTotal,
+            'grandTotal' => $grandTotal,
+            'amountInWords' => Money::words($grandTotal),
+        ];
+    }
+
+    private function companyDetails(): array
+    {
+        return [
             'companyName' => Setting::get('company_name', 'Company Name'),
             'companyLogo' => Setting::get('company_logo'),
             'companyAddress' => Setting::get('company_address'),
@@ -160,16 +168,6 @@ class PdfService
             'companyEmail' => Setting::get('company_email'),
             'companyGstin' => Setting::get('company_gstin'),
             'companyState' => Setting::get('company_state'),
-            'taxableTotal' => $taxableTotal,
-            'cgstTotal' => $cgstTotal,
-            'sgstTotal' => $sgstTotal,
-            'grandTotal' => $grandTotal,
-            'amountInWords' => Money::words($grandTotal),
         ];
-
-        $pdf = Pdf::loadView('pdf.transfer-challan', $data);
-        $pdf->setPaper('A4', 'landscape');
-
-        return $pdf;
     }
 }

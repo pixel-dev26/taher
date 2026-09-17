@@ -42,8 +42,12 @@ class Money
      */
     public static function words(float $amount): string
     {
-        $rupees = (int) floor(abs($amount));
-        $paise = (int) round((abs($amount) - $rupees) * 100);
+        // Settle to paise first, the same rounding number_format() applies
+        // when the figure is printed — otherwise 12.995 prints as 13.00 but
+        // would be spelled "TWELVE RUPEES AND ONE HUNDRED PAISE".
+        $paiseTotal = (int) round(abs($amount) * 100);
+        $rupees = intdiv($paiseTotal, 100);
+        $paise = $paiseTotal % 100;
 
         $words = self::numberToIndianWords($rupees) . ' RUPEES';
 
@@ -51,7 +55,7 @@ class Money
             $words .= ' AND ' . self::numberToIndianWords($paise) . ' PAISE';
         }
 
-        return $words . ' ONLY';
+        return ($amount < 0 ? 'MINUS ' : '') . $words . ' ONLY';
     }
 
     private static function numberToIndianWords(int $number): string
@@ -92,7 +96,9 @@ class Money
         $hundred = $number % 1000;
 
         $segments = [];
-        if ($crore) $segments[] = $twoDigits($crore) . ' CRORE';
+        // Crores recurse (100+ crore reads "ONE HUNDRED CRORE"), since the
+        // 0-99 helper would otherwise run off the end of its tables.
+        if ($crore) $segments[] = self::numberToIndianWords($crore) . ' CRORE';
         if ($lakh) $segments[] = $twoDigits($lakh) . ' LAKH';
         if ($thousand) $segments[] = $twoDigits($thousand) . ' THOUSAND';
         if ($hundred) $segments[] = $threeDigits($hundred);

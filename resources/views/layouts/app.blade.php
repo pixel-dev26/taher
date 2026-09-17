@@ -335,7 +335,12 @@
         /* Dispatches also ask for an HSN code — three fields need more room,
            and wrap onto their own row on narrow screens rather than squeezing. */
         .line-items-hsn .line-item .li-controls { flex-basis: 540px; flex-wrap: wrap; }
+        /* Real flex bases, so the row can actually wrap: with a 0 basis the
+           three inputs never overflowed the line and just squeezed to a few
+           pixels each on a phone. */
+        .line-items-hsn .line-item .li-qty, .line-items-hsn .line-item .li-price { flex: 1 1 130px; }
         .line-item .li-hsn { flex: 0 1 110px; min-width: 90px; }
+        .line-items-hsn .line-item .li-hsn { flex: 1 1 110px; }
         .line-item .li-amount strong { color: var(--text-dark); }
         .line-item .cl-label {
             display: block; margin-bottom: 0.2rem; font-size: 0.68rem; text-transform: uppercase;

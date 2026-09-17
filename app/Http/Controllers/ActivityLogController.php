@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\SanitizesFilters;
 use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -13,24 +14,37 @@ use Illuminate\Http\Request;
  */
 class ActivityLogController extends Controller
 {
+    use SanitizesFilters;
+
     public function index(Request $request)
     {
-        $query = ActivityLog::with('user')->latest('created_at');
+        $filters = $this->filters($request, [
+            'user_id' => 'nullable|integer',
+            'subject_type' => 'nullable|string|max:100',
+            'action' => 'nullable|string|max:30',
+            'date_from' => 'nullable|date_format:Y-m-d',
+            'date_to' => 'nullable|date_format:Y-m-d',
+        ]);
 
-        if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
+        // Several rows are routinely written within the same second (a
+        // document plus its HSN backfill, a settings save), so the id is the
+        // tiebreaker — without it pages could repeat or skip rows.
+        $query = ActivityLog::with('user')->latest('created_at')->latest('id');
+
+        if (! empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
         }
 
-        if ($request->filled('subject_type')) {
-            $query->where('subject_type', $request->subject_type);
+        if (! empty($filters['subject_type'])) {
+            $query->where('subject_type', $filters['subject_type']);
         }
 
-        if ($request->filled('action')) {
-            $query->where('action', $request->action);
+        if (! empty($filters['action'])) {
+            $query->where('action', $filters['action']);
         }
 
-        $from = $request->get('date_from', today()->subDays(30)->format('Y-m-d'));
-        $to = $request->get('date_to');
+        $from = $filters['date_from'] ?? today()->subDays(30)->format('Y-m-d');
+        $to = $filters['date_to'] ?? null;
 
         $query->whereDate('created_at', '>=', $from);
 

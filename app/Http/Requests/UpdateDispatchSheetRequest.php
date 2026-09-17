@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Services\StockService;
 use App\Models\Sku;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateDispatchSheetRequest extends FormRequest
 {
@@ -15,10 +16,17 @@ class UpdateDispatchSheetRequest extends FormRequest
 
     public function rules(): array
     {
+        // Only a *changed* delivery date has to be today or later. An overdue
+        // pending sheet keeps its stored (past) date, and the user must still
+        // be able to fix a quantity or vehicle number on it without being
+        // forced to falsify the date.
+        $stored = $this->route('dispatch_sheet')->delivery_date?->format('Y-m-d');
+        $dateChanged = $this->input('delivery_date') !== $stored;
+
         return [
             'items' => 'required|array|min:1',
             'items.*.sku_id' => 'required|exists:skus,id',
-            'items.*.quantity' => 'required|numeric|gt:0',
+            'items.*.quantity' => 'required|numeric|gt:0|max:999999999',
             'items.*.unit_price' => 'required|numeric|min:0|max:9999999999',
             'items.*.hsn_code' => 'required|string|max:20',
             'customer_name' => 'nullable|string|max:255',
@@ -26,7 +34,7 @@ class UpdateDispatchSheetRequest extends FormRequest
             'customer_gstin' => 'nullable|string|max:20',
             'place_of_supply' => 'nullable|string|max:100',
             'delivery_address' => 'nullable|string|max:1000',
-            'delivery_date' => 'nullable|date|after_or_equal:today',
+            'delivery_date' => ['nullable', 'date', Rule::when($dateChanged, ['after_or_equal:today'])],
             'vehicle_no' => 'nullable|string|max:50',
             'driver_name' => 'nullable|string|max:255',
             'driver_phone' => 'nullable|string|max:20',

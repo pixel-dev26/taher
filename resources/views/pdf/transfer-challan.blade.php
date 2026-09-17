@@ -203,7 +203,8 @@
         <tfoot>
             <tr>
                 <td colspan="3" class="text-right">Total</td>
-                <td class="text-right">{{ number_format($transfer->items->sum('quantity'), 0) }}</td>
+                @php $qtySum = $lines->sum('quantity'); @endphp
+                <td class="text-right">{{ number_format($qtySum, $qtySum == intval($qtySum) ? 0 : 3) }}</td>
                 <td></td>
                 <td></td>
                 <td class="text-right">{{ number_format($taxableTotal, 2) }}</td>

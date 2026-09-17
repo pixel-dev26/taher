@@ -95,10 +95,17 @@
     </div>
 </div>
 
-<div class="d-flex gap-3 flex-wrap mb-4">
-    <a href="{{ route('stock-transfers.challan', $stockTransfer) }}" class="btn btn-outline-secondary">
-        <i class="bi bi-receipt me-1"></i> Download Road Challan
-    </a>
+<div class="d-flex gap-3 flex-wrap mb-4 align-items-center">
+    @if($challanIssue)
+        <button type="button" class="btn btn-outline-secondary" disabled title="{{ $challanIssue }}">
+            <i class="bi bi-receipt me-1"></i> Download Road Challan
+        </button>
+        <span class="text-muted small">{{ $challanIssue }}</span>
+    @else
+        <a href="{{ route('stock-transfers.challan', $stockTransfer) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-receipt me-1"></i> Download Road Challan
+        </a>
+    @endif
 </div>
 
 {{-- Accept / Reject buttons (only for pending transfers) --}}

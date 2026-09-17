@@ -13,7 +13,7 @@ class UpdateSkuRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        $rules = [
             'name' => 'required|string|max:255',
             'category' => 'required|string|max:100',
             'variant_attributes' => 'nullable|array',
@@ -24,7 +24,15 @@ class UpdateSkuRequest extends FormRequest
             'hsn_code' => 'nullable|string|max:20',
             // Optional here: most existing products were created before prices.
             'price' => 'nullable|numeric|min:0|max:9999999999',
-            'is_active' => 'boolean',
         ];
+
+        // Deactivating (or reviving) a product is the app's one admin-only
+        // data action — see routes/web.php. Without a rule the key never
+        // reaches validated(), so a staff submission simply can't touch it.
+        if ($this->user()->isAdmin()) {
+            $rules['is_active'] = 'boolean';
+        }
+
+        return $rules;
     }
 }

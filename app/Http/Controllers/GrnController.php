@@ -85,8 +85,13 @@ class GrnController extends Controller
             });
 
             return redirect()->route('grn.show', $grn)->with('success', "GRN {$grn->grn_number} created successfully.");
-        } catch (\Exception $e) {
-            return back()->withInput()->with('error', 'Failed to create GRN: ' . $e->getMessage());
+        } catch (\RuntimeException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            // Never echo a raw database error (it carries the SQL and the
+            // typed values) — log it and show something a user can act on.
+            report($e);
+            return back()->withInput()->with('error', 'Failed to create the GRN. Please try again; if it keeps happening, contact your administrator.');
         }
     }
 

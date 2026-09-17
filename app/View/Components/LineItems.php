@@ -68,6 +68,13 @@ class LineItems extends Component
         $skus = Sku::whereIn('id', $skuIds)->get()->keyBy('id');
         $available = $this->availability($skuIds);
 
+        // On an edit form the sheet's own saved lines are already counted in
+        // "reserved", so what it may still take is free stock plus what it
+        // holds — the same delta the server checks on save.
+        $held = $this->godownId
+            ? collect($this->items)->pluck('quantity', 'sku_id')->map(fn ($q) => (float) $q)
+            : collect();
+
         $rows = [];
 
         // Preserve the original index — validation errors are keyed
@@ -91,7 +98,7 @@ class LineItems extends Component
                 // retype for a product that's already classified.
                 'hsn_code' => $item['hsn_code'] ?? $sku->hsn_code,
                 'available' => $record
-                    ? (float) $record->on_hand - (float) $record->reserved
+                    ? (float) $record->on_hand - (float) $record->reserved + ($held[$sku->id] ?? 0.0)
                     : null,
             ];
         }

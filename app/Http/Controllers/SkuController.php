@@ -116,6 +116,12 @@ class SkuController extends Controller
             $data['variant_attributes'] = !empty($attrs) ? $attrs : null;
         }
 
+        $deactivating = array_key_exists('is_active', $data) && ! $data['is_active'] && $sku->is_active;
+
+        if ($deactivating && $this->hasStock($sku)) {
+            return back()->withInput()->with('error', 'Cannot deactivate a product that still has stock. Move or correct the stock out first.');
+        }
+
         $sku->update($data);
 
         return redirect()->route('skus.index')->with('success', 'SKU updated successfully.');
@@ -123,18 +129,20 @@ class SkuController extends Controller
 
     public function destroy(Sku $sku)
     {
-        // Check if SKU has any stock
-        $hasStock = StockRecord::where('sku_id', $sku->id)
-            ->where(function ($q) {
-                $q->where('on_hand', '>', 0)->orWhere('reserved', '>', 0);
-            })->exists();
-
-        if ($hasStock) {
-            return back()->with('error', 'Cannot delete SKU with existing stock. Deactivate it instead.');
+        if ($this->hasStock($sku)) {
+            return back()->with('error', 'Cannot deactivate a product that still has stock. Move or correct the stock out first.');
         }
 
         $sku->update(['is_active' => false]);
         return redirect()->route('skus.index')->with('success', 'SKU deactivated.');
+    }
+
+    private function hasStock(Sku $sku): bool
+    {
+        return StockRecord::where('sku_id', $sku->id)
+            ->where(function ($q) {
+                $q->where('on_hand', '>', 0)->orWhere('reserved', '>', 0);
+            })->exists();
     }
 
     public function apiSearch(Request $request)

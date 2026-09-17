@@ -22,7 +22,7 @@
                 </div>
                 <div class="col-md-6">
                     <label for="delivery_date" class="form-label">Delivery Date</label>
-                    <input type="date" class="form-control" id="delivery_date" name="delivery_date" value="{{ old('delivery_date', $dispatchSheet->delivery_date?->format('Y-m-d')) }}" min="{{ today()->format('Y-m-d') }}">
+                    <input type="date" class="form-control" id="delivery_date" name="delivery_date" value="{{ old('delivery_date', $dispatchSheet->delivery_date?->format('Y-m-d')) }}" min="{{ min(today(), $dispatchSheet->delivery_date ?? today())->format('Y-m-d') }}">
                     <div class="form-hint">When should this be delivered?</div>
                 </div>
             </div>
@@ -90,11 +90,16 @@
             <hr class="section-divider">
             <h6 class="mb-2">Products in this Dispatch</h6>
 
-            <x-sku-picker placeholder="Type product name or code to add more..." />
+            {{-- No name, so it is never submitted: it only lets the shared
+                 picker/line-item script know which godown to check
+                 availability against (the godown itself can't change here). --}}
+            <input type="hidden" id="godown_id" value="{{ $dispatchSheet->godown_id }}">
+
+            <x-sku-picker show-available placeholder="Type product name or code to add more..." />
 
             {{-- Old input wins over the saved rows, so a failed save keeps the
                  user's edits instead of reverting to what is stored. --}}
-            <x-line-items qty-label="Quantity" :show-price="true" :show-hsn="true"
+            <x-line-items qty-label="Quantity" show-available :godown-id="$dispatchSheet->godown_id" :show-price="true" :show-hsn="true"
                           :items="$dispatchSheet->items->map(fn($i) => ['sku_id' => $i->sku_id, 'quantity' => $i->quantity, 'unit_price' => $i->unit_price, 'hsn_code' => $i->hsn_code])->all()" />
 
             <div class="form-action-bar">

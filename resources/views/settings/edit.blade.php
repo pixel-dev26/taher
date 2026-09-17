@@ -8,6 +8,7 @@
 
 <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data">
     @csrf @method('PUT')
+    <x-form-errors />
 
     <div class="card mb-4">
         <div class="card-header"><h5 class="mb-0">Company Information</h5></div>
@@ -73,11 +74,12 @@
             <div class="row">
                 <div class="col-md-4">
                     <label for="default_low_stock_threshold" class="form-label">Default Low Stock Threshold</label>
-                    <input type="number" class="form-control" id="default_low_stock_threshold" name="default_low_stock_threshold" value="{{ old('default_low_stock_threshold', $settings['default_low_stock_threshold']) }}" min="0">
+                    <input type="number" class="form-control @error('default_low_stock_threshold') is-invalid @enderror" id="default_low_stock_threshold" name="default_low_stock_threshold" value="{{ old('default_low_stock_threshold', $settings['default_low_stock_threshold']) }}" min="0" required>
+                    @error('default_low_stock_threshold') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-4">
                     <label for="default_gst_rate" class="form-label">Default GST Rate (%)</label>
-                    <input type="number" class="form-control @error('default_gst_rate') is-invalid @enderror" id="default_gst_rate" name="default_gst_rate" value="{{ old('default_gst_rate', $settings['default_gst_rate']) }}" min="0" max="100" step="0.01">
+                    <input type="number" class="form-control @error('default_gst_rate') is-invalid @enderror" id="default_gst_rate" name="default_gst_rate" value="{{ old('default_gst_rate', $settings['default_gst_rate']) }}" min="0" max="100" step="0.01" required>
                     <div class="form-hint">Split evenly into CGST + SGST on the Delivery Challan</div>
                     @error('default_gst_rate') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>

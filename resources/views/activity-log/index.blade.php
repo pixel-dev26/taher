@@ -39,7 +39,7 @@
                 <label class="form-label">Action</label>
                 <select name="action" class="form-select">
                     <option value="">All</option>
-                    @foreach(['created' => 'Created', 'updated' => 'Updated', 'deleted' => 'Deleted', 'login' => 'Signed In'] as $val => $label)
+                    @foreach(['created' => 'Created', 'updated' => 'Updated', 'deleted' => 'Deleted', 'login' => 'Signed In', 'logout' => 'Signed Out', 'login_failed' => 'Failed Sign-in'] as $val => $label)
                     <option value="{{ $val }}" {{ request('action') === $val ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
@@ -55,9 +55,23 @@
     $actionBadge = fn ($action) => match ($action) {
         'created' => ['bg' => 'var(--brand-soft)', 'color' => 'var(--brand-dark)'],
         'updated' => ['bg' => 'var(--info-soft)', 'color' => 'var(--info-dark)'],
-        'deleted' => ['bg' => 'var(--critical-soft)', 'color' => 'var(--critical-dark)'],
-        'login' => ['bg' => '#F0F1F3', 'color' => '#5B6470'],
+        'deleted', 'login_failed' => ['bg' => 'var(--critical-soft)', 'color' => 'var(--critical-dark)'],
+        'login', 'logout' => ['bg' => '#F0F1F3', 'color' => '#5B6470'],
         default => ['bg' => '#F0F1F3', 'color' => '#5B6470'],
+    };
+    $actionLabel = fn ($action) => match ($action) {
+        'login' => 'Signed In',
+        'logout' => 'Signed Out',
+        'login_failed' => 'Failed Sign-in',
+        default => ucfirst($action),
+    };
+    // Change values are whatever the model held: booleans print as nothing
+    // and arrays crash e(); render every value through one formatter.
+    $fmtVal = fn ($v) => match (true) {
+        is_bool($v) => $v ? 'Yes' : 'No',
+        is_null($v) || $v === '' => '—',
+        is_array($v) => json_encode($v, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        default => (string) $v,
     };
 @endphp
 
@@ -75,7 +89,7 @@
                     <tr>
                         <td class="small">{{ $entry->created_at->format('d M Y, h:i A') }}</td>
                         <td>{{ $entry->user_name ?? 'System' }}</td>
-                        <td><span class="badge" style="background:{{ $b['bg'] }}; color:{{ $b['color'] }};">{{ ucfirst($entry->action) }}</span></td>
+                        <td><span class="badge" style="background:{{ $b['bg'] }}; color:{{ $b['color'] }};">{{ $actionLabel($entry->action) }}</span></td>
                         <td>
                             <span class="fw-semibold">{{ $entry->subject_type_short }}</span>
                             <div class="small text-muted">{{ $entry->subject_label }}</div>
@@ -94,11 +108,11 @@
                                             <div>
                                                 <strong>{{ str_replace('_', ' ', $field) }}:</strong>
                                                 @if(array_key_exists($field, $before) && array_key_exists($field, $after))
-                                                    {{ $before[$field] ?? '—' }} &rarr; {{ $after[$field] ?? '—' }}
+                                                    {{ $fmtVal($before[$field]) }} &rarr; {{ $fmtVal($after[$field]) }}
                                                 @elseif(array_key_exists($field, $after))
-                                                    {{ $after[$field] ?? '—' }}
+                                                    {{ $fmtVal($after[$field]) }}
                                                 @else
-                                                    {{ $before[$field] ?? '—' }}
+                                                    {{ $fmtVal($before[$field]) }}
                                                 @endif
                                             </div>
                                         @endforeach
@@ -120,7 +134,7 @@
             @php $b = $actionBadge($entry->action); @endphp
             <div class="card-list-item">
                 <div class="cl-row mb-1">
-                    <span class="badge" style="background:{{ $b['bg'] }}; color:{{ $b['color'] }};">{{ ucfirst($entry->action) }}</span>
+                    <span class="badge" style="background:{{ $b['bg'] }}; color:{{ $b['color'] }};">{{ $actionLabel($entry->action) }}</span>
                     <span class="small text-muted">{{ $entry->created_at->format('d M Y, h:i A') }}</span>
                 </div>
                 <div class="mb-1"><strong>{{ $entry->subject_type_short }}</strong> <span style="font-size:0.82rem;">{{ $entry->subject_label }}</span></div>
@@ -138,11 +152,11 @@
                                 <span class="cl-label">{{ str_replace('_', ' ', $field) }}</span>
                                 <span class="cl-value">
                                     @if(array_key_exists($field, $before) && array_key_exists($field, $after))
-                                        {{ $before[$field] ?? '—' }} &rarr; {{ $after[$field] ?? '—' }}
+                                        {{ $fmtVal($before[$field]) }} &rarr; {{ $fmtVal($after[$field]) }}
                                     @elseif(array_key_exists($field, $after))
-                                        {{ $after[$field] ?? '—' }}
+                                        {{ $fmtVal($after[$field]) }}
                                     @else
-                                        {{ $before[$field] ?? '—' }}
+                                        {{ $fmtVal($before[$field]) }}
                                     @endif
                                 </span>
                             </div>

@@ -8,6 +8,10 @@
  *   #skuSearchInput[data-sku-picker][data-godown-field][data-require-godown]
  *   #lineItems[data-next-index][data-show-available][data-allow-negative][data-show-price][data-show-hsn]
  *   #lineItemTemplate  — the row markup, cloned per product
+ *
+ * Product names, codes and categories are typed by staff, so they only ever
+ * reach the page through textContent / .value — never through innerHTML or a
+ * string replace into markup.
  */
 (function () {
     'use strict';
@@ -35,6 +39,7 @@
     var results = [];
     var activeIndex = -1;
     var submitting = false;
+    var dirty = false;       // anything typed or added since the page loaded
 
     // ---------------------------------------------------------------- helpers
 
@@ -72,6 +77,17 @@
 
     function hsnInput(row) {
         return row.querySelector('.li-hsn input');
+    }
+
+    function el(tag, className, text) {
+        var node = document.createElement(tag);
+        if (className) {
+            node.className = className;
+        }
+        if (typeof text !== 'undefined') {
+            node.textContent = text;
+        }
+        return node;
     }
 
     /** Rupees with Indian grouping, matching App\Support\Money::inr(). */
@@ -118,26 +134,27 @@
     function toast(message, type) {
         var host = document.querySelector('.toast-container');
         if (!host) {
-            host = document.createElement('div');
-            host.className = 'toast-container';
+            host = el('div', 'toast-container');
             document.body.appendChild(host);
         }
 
-        var el = document.createElement('div');
-        el.className = 'toast align-items-center border-0 text-bg-' + (type || 'secondary');
-        el.setAttribute('role', 'alert');
-        el.innerHTML =
-            '<div class="d-flex">' +
-            '<div class="toast-body">' + message + '</div>' +
-            '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>' +
-            '</div>';
-        host.appendChild(el);
+        var node = el('div', 'toast align-items-center border-0 text-bg-' + (type || 'secondary'));
+        node.setAttribute('role', 'alert');
+
+        var wrap = el('div', 'd-flex');
+        wrap.appendChild(el('div', 'toast-body', message));
+        var close = el('button', 'btn-close btn-close-white me-2 m-auto');
+        close.type = 'button';
+        close.setAttribute('data-bs-dismiss', 'toast');
+        wrap.appendChild(close);
+        node.appendChild(wrap);
+        host.appendChild(node);
 
         if (window.bootstrap && window.bootstrap.Toast) {
-            new window.bootstrap.Toast(el, { delay: 4000 }).show();
-            el.addEventListener('hidden.bs.toast', function () { el.remove(); });
+            new window.bootstrap.Toast(node, { delay: 4000 }).show();
+            node.addEventListener('hidden.bs.toast', function () { node.remove(); });
         } else {
-            setTimeout(function () { el.remove(); }, 4000);
+            setTimeout(function () { node.remove(); }, 4000);
         }
     }
 
@@ -227,7 +244,7 @@
         request = new AbortController();
 
         var url = '/api/sku-search?q=' + encodeURIComponent(q);
-        if (godownValue()) {
+        if (showAvailable && godownValue()) {
             url += '&godown_id=' + encodeURIComponent(godownValue());
         }
 
@@ -247,7 +264,7 @@
         list.innerHTML = '';
 
         if (!items.length) {
-            list.innerHTML = '<div class="list-group-item text-muted small text-center">No matching products found</div>';
+            list.appendChild(el('div', 'list-group-item text-muted small text-center', 'No matching products found'));
             list.style.display = 'block';
             picker.setAttribute('aria-expanded', 'true');
             return;
@@ -255,26 +272,27 @@
 
         items.forEach(function (sku, i) {
             var added = hasSku(sku.id);
-            var row = document.createElement('button');
+            var row = el('button', 'list-group-item list-group-item-action sku-result' + (added ? ' sku-result-added' : ''));
             row.type = 'button';
-            row.className = 'list-group-item list-group-item-action sku-result' + (added ? ' sku-result-added' : '');
             row.id = 'sku-opt-' + i;
             row.setAttribute('role', 'option');
 
             // Code and name on separate lines — the names are long and
             // near-identical, so a single truncated line is unreadable.
-            var meta = '';
-            if (showAvailable && typeof sku.available !== 'undefined') {
-                meta = '<span class="badge ' + (sku.available > 0 ? 'badge-dispatched' : 'badge-cancelled') + '">' +
-                    tidy(sku.available) + ' ' + sku.uom + '</span>';
+            var top = el('div', 'sku-result-top');
+            top.appendChild(el('code', null, sku.code));
+            if (sku.category) {
+                top.appendChild(el('span', 'sku-result-cat', sku.category));
             }
-
-            row.innerHTML =
-                '<div class="sku-result-top"><code>' + sku.code + '</code>' +
-                (sku.category ? '<span class="sku-result-cat">' + sku.category + '</span>' : '') +
-                meta + '</div>' +
-                '<div class="sku-result-name">' + sku.name + '</div>' +
-                (added ? '<div class="sku-result-flag">Already added</div>' : '');
+            if (showAvailable && typeof sku.available !== 'undefined') {
+                top.appendChild(el('span', 'badge ' + (sku.available > 0 ? 'badge-dispatched' : 'badge-cancelled'),
+                    tidy(sku.available) + ' ' + sku.uom));
+            }
+            row.appendChild(top);
+            row.appendChild(el('div', 'sku-result-name', sku.name));
+            if (added) {
+                row.appendChild(el('div', 'sku-result-flag', 'Already added'));
+            }
 
             row.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -285,10 +303,8 @@
         });
 
         if (total > limit) {
-            var more = document.createElement('div');
-            more.className = 'sku-result-more';
-            more.textContent = 'Showing ' + items.length + ' of ' + total + ' — keep typing to narrow it down';
-            list.appendChild(more);
+            list.appendChild(el('div', 'sku-result-more',
+                'Showing ' + items.length + ' of ' + total + ' — keep typing to narrow it down'));
         }
 
         list.style.display = 'block';
@@ -302,10 +318,10 @@
         }
         activeIndex = (i + options.length) % options.length;
         options.forEach(function (o) { o.classList.remove('active'); });
-        var el = options[activeIndex];
-        el.classList.add('active');
-        el.scrollIntoView({ block: 'nearest' });
-        picker.setAttribute('aria-activedescendant', el.id);
+        var node = options[activeIndex];
+        node.classList.add('active');
+        node.scrollIntoView({ block: 'nearest' });
+        picker.setAttribute('aria-activedescendant', node.id);
     }
 
     function choose(i) {
@@ -326,18 +342,34 @@
     // ------------------------------------------------------------- line items
 
     function addRow(sku) {
+        // Only the two numeric placeholders go through the markup string;
+        // everything user-entered is assigned as text below.
         var html = template.innerHTML
-            .replace(/__I__/g, nextIndex)
-            .replace(/__SKU_ID__/g, sku.id)
-            .replace(/__CODE__/g, sku.code)
-            .replace(/__NAME__/g, sku.name)
-            .replace(/__UOM__/g, sku.uom)
-            .replace(/__AVAIL__/g, typeof sku.available !== 'undefined' ? tidy(sku.available) : '')
-            .replace(/__HSN__/g, sku.hsn_code || '');
+            .replace(/__I__/g, String(nextIndex))
+            .replace(/__SKU_ID__/g, String(parseInt(sku.id, 10)));
 
         var frag = document.createElement('div');
         frag.innerHTML = html.trim();
         var row = frag.firstElementChild;
+
+        row.querySelector('.li-code').textContent = sku.code;
+        row.querySelector('.li-name').textContent = sku.name;
+        row.querySelectorAll('.li-uom').forEach(function (node) { node.textContent = sku.uom; });
+
+        var avail = row.querySelector('.li-avail-qty');
+        if (avail) {
+            avail.textContent = typeof sku.available !== 'undefined' ? tidy(sku.available) : '';
+        }
+
+        var hsn = hsnInput(row);
+        if (hsn) {
+            hsn.value = sku.hsn_code || '';
+        }
+
+        var remove = row.querySelector('.li-remove');
+        if (remove) {
+            remove.setAttribute('aria-label', 'Remove ' + sku.code);
+        }
 
         var qty = qtyInput(row);
         if (showAvailable && typeof sku.available !== 'undefined') {
@@ -347,6 +379,7 @@
         container.appendChild(row);
         nextIndex++;
         container.dataset.nextIndex = nextIndex;
+        dirty = true;
 
         row.classList.add('line-item-new');
         setTimeout(function () { row.classList.remove('line-item-new'); }, 1200);
@@ -359,59 +392,68 @@
      * Returns the first input needing attention, or null when every row holds
      * a usable quantity (and price and HSN code, where asked for).
      *
-     * A missing price or HSN code is only flagged once that field has been
-     * typed in, or on save ($strict) — otherwise entering a quantity would
-     * immediately flag the other empty boxes beside it.
+     * A problem is only flagged on a row the user has typed in, or on save
+     * ($strict) — otherwise entering a quantity on one row would immediately
+     * flag every other empty row. Rows the user hasn't touched keep whatever
+     * message the server rendered on them after a failed save.
      */
     function validate(report, strict) {
         var firstBad = null;
 
         rows().forEach(function (row) {
             var input = qtyInput(row);
+            var price = priceInput(row);
+            var hsn = hsnInput(row);
+
+            var touched = !!strict || [input, price, hsn].some(function (node) {
+                return node && node.dataset.touched === '1';
+            });
+            var show = !!report && touched;
+
             var value = parseFloat(input.value);
             var max = parseFloat(input.max);
             var qtyBad = isNaN(value) || value === 0 || (!isNaN(max) && value > max);
 
-            var price = priceInput(row);
             var priceValue = price ? parseFloat(price.value) : 0;
             var priceBad = !!price && !(value < 0) && (price.value === '' || isNaN(priceValue) || priceValue < 0);
-            var priceShown = priceBad && report && (strict || price.dataset.touched === '1');
 
-            var hsn = hsnInput(row);
             var hsnBad = !!hsn && !(value < 0) && hsn.value.trim() === '';
-            var hsnShown = hsnBad && report && (strict || hsn.dataset.touched === '1');
 
-            var slot = row.querySelector('.li-error');
+            if (!firstBad && (qtyBad || priceBad || hsnBad)) {
+                firstBad = qtyBad ? input : (priceBad ? price : hsn);
+            }
+
+            if (!show) {
+                return;
+            }
+
             var messages = [];
 
-            input.classList.toggle('is-invalid', !!(qtyBad && report));
+            input.classList.toggle('is-invalid', qtyBad);
             if (price) {
-                price.classList.toggle('is-invalid', !!priceShown);
+                price.classList.toggle('is-invalid', priceBad);
             }
             if (hsn) {
-                hsn.classList.toggle('is-invalid', !!hsnShown);
+                hsn.classList.toggle('is-invalid', hsnBad);
             }
-            row.classList.toggle('line-item-invalid', !!((qtyBad && report) || priceShown || hsnShown));
+            row.classList.toggle('line-item-invalid', qtyBad || priceBad || hsnBad);
 
-            if (qtyBad && report) {
+            if (qtyBad) {
                 messages.push(isNaN(value) || value === 0
                     ? 'Enter a quantity.'
                     : 'Only ' + tidy(max) + ' available.');
             }
-            if (priceShown) {
+            if (priceBad) {
                 messages.push(priceValue < 0 ? 'Price cannot be negative.' : 'Enter the price per unit.');
             }
-            if (hsnShown) {
+            if (hsnBad) {
                 messages.push('Enter the HSN code.');
             }
 
+            var slot = row.querySelector('.li-error');
             if (slot) {
                 slot.textContent = messages.join(' ');
                 slot.hidden = messages.length === 0;
-            }
-
-            if (!firstBad && (qtyBad || priceBad || hsnBad)) {
-                firstBad = qtyBad ? input : (priceBad ? price : hsn);
             }
         });
 
@@ -455,22 +497,25 @@
             return;
         }
         btn.closest('.line-item').remove();
+        dirty = true;
         refreshState();
     });
 
     container.addEventListener('input', function (e) {
         if (e.target.matches('.li-qty input, .li-price input, .li-hsn input')) {
             e.target.dataset.touched = '1';
+            dirty = true;
             validate(true);
             refreshState();
         }
     });
 
-    // Changing the godown invalidates every availability figure on screen.
-    // The old code silently emptied the table; ask first, and put the previous
-    // selection back if the user declines.
+    // Only when rows carry godown-specific figures (availability, quantity
+    // caps) does changing the godown invalidate what's on screen. The GRN and
+    // correction forms don't, so a wrong godown there is just a dropdown fix
+    // rather than 25 rows to retype.
     var godown = godownEl();
-    if (godown) {
+    if (godown && showAvailable) {
         godown.dataset.previous = godown.value;
         godown.addEventListener('change', function () {
             var count = rows().length;
@@ -484,6 +529,8 @@
             closeList();
             refreshState();
         });
+    } else if (godown) {
+        godown.addEventListener('change', updateSteps);
     }
 
     if (form) {
@@ -506,11 +553,17 @@
             }
             submitting = true;
         });
+
+        // The form's own Cancel link is a deliberate exit, not an accident.
+        form.querySelectorAll('a.btn').forEach(function (link) {
+            link.addEventListener('click', function () { submitting = true; });
+        });
     }
 
-    // A back-swipe on a phone would otherwise silently discard a long entry.
+    // A back-swipe on a phone would otherwise silently discard a long entry —
+    // but only once something has actually been entered or changed.
     window.addEventListener('beforeunload', function (e) {
-        if (!submitting && rows().length) {
+        if (!submitting && dirty && rows().length) {
             e.preventDefault();
             e.returnValue = '';
         }

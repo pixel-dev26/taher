@@ -12,6 +12,7 @@
             <div class="card-body">
                 <form method="POST" action="{{ route('godowns.update', $godown) }}">
                     @csrf @method('PUT')
+                    <x-form-errors />
                     <div class="mb-3">
                         <label class="form-label">Code</label>
                         <input type="text" class="form-control" value="{{ $godown->code }}" disabled>
@@ -29,11 +30,17 @@
                         <label for="contact_phone" class="form-label">Contact Phone</label>
                         <input type="text" class="form-control" id="contact_phone" name="contact_phone" value="{{ old('contact_phone', $godown->contact_phone) }}">
                     </div>
+                    @if(auth()->user()->isAdmin())
                     <div class="mb-3 form-check">
                         <input type="hidden" name="is_active" value="0">
-                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" value="1" {{ old('is_active', $godown->is_active) ? 'checked' : '' }}>
+                        <input type="checkbox" class="form-check-input @error('is_active') is-invalid @enderror" id="is_active" name="is_active" value="1" {{ old('is_active', $godown->is_active) ? 'checked' : '' }}>
                         <label class="form-check-label" for="is_active">Active</label>
+                        @error('is_active') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                        <div class="form-hint">Untick to close this godown. Only an admin can change this, and only once it holds no stock.</div>
                     </div>
+                    @elseif(! $godown->is_active)
+                    <div class="mb-3 text-muted small"><i class="bi bi-info-circle me-1"></i>This godown is inactive. Ask an admin to reactivate it.</div>
+                    @endif
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Update Godown</button>
                         <a href="{{ route('godowns.index') }}" class="btn btn-outline-secondary">Cancel</a>

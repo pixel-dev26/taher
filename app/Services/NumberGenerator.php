@@ -12,20 +12,17 @@ class NumberGenerator
             $today = now()->format('Ymd');
             $pattern = "{$prefix}-{$today}-%";
 
-            $latest = DB::table($table)
+            // Compare the sequence numerically, not as text: sorted as
+            // strings, "...-999" outranks "...-1000", so the day's 1001st
+            // document would collide with the 1000th forever after.
+            $lastSeq = DB::table($table)
                 ->where($column, 'LIKE', $pattern)
                 ->lockForUpdate()
-                ->orderByDesc($column)
-                ->value($column);
+                ->pluck($column)
+                ->map(fn ($number) => (int) substr($number, strrpos($number, '-') + 1))
+                ->max() ?? 0;
 
-            if ($latest) {
-                $lastSeq = (int)substr($latest, -3);
-                $newSeq = $lastSeq + 1;
-            } else {
-                $newSeq = 1;
-            }
-
-            return sprintf('%s-%s-%03d', $prefix, $today, $newSeq);
+            return sprintf('%s-%s-%03d', $prefix, $today, $lastSeq + 1);
         });
     }
 

@@ -12,6 +12,7 @@
             <div class="card-body">
                 <form method="POST" action="{{ route('skus.update', $sku) }}">
                     @csrf @method('PUT')
+                    <x-form-errors />
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">SKU Code</label>
@@ -60,14 +61,20 @@
                         </div>
                         <div class="col-md-6">
                             <label for="hsn_code" class="form-label">HSN Code</label>
-                            <input type="text" class="form-control" id="hsn_code" name="hsn_code" value="{{ old('hsn_code', $sku->hsn_code) }}">
+                            <input type="text" class="form-control @error('hsn_code') is-invalid @enderror" id="hsn_code" name="hsn_code" value="{{ old('hsn_code', $sku->hsn_code) }}" maxlength="20">
+                            @error('hsn_code') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
+                    @if(auth()->user()->isAdmin())
                     <div class="mb-3 form-check">
                         <input type="hidden" name="is_active" value="0">
                         <input type="checkbox" class="form-check-input" id="is_active" name="is_active" value="1" {{ old('is_active', $sku->is_active) ? 'checked' : '' }}>
                         <label class="form-check-label" for="is_active">Active</label>
+                        <div class="form-hint">Untick to retire this product. Only an admin can change this, and only when it holds no stock.</div>
                     </div>
+                    @elseif(! $sku->is_active)
+                    <div class="mb-3 text-muted small"><i class="bi bi-info-circle me-1"></i>This product is inactive. Ask an admin to reactivate it.</div>
+                    @endif
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Update SKU</button>
                         <a href="{{ route('skus.index') }}" class="btn btn-outline-secondary">Cancel</a>

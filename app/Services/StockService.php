@@ -304,7 +304,7 @@ class StockService
         DB::transaction(function () use ($sheet) {
             foreach ($sheet->items as $item) {
                 $record = $this->getStockRecordForUpdate($item->sku_id, $sheet->godown_id);
-                $record->reserved = max(0, (float)$record->reserved - (float)$item->quantity);
+                $record->reserved = $this->releaseFrom((float) $record->reserved, (float) $item->quantity, $item->sku->code);
                 $record->save();
 
                 $this->createLedgerEntry(
@@ -351,8 +351,8 @@ class StockService
                     $record->reserved = (float)$record->reserved + $delta;
                     $movementType = 'reserved';
                 } else {
-                    // Release stock
-                    $record->reserved = max(0, (float)$record->reserved + $delta); // delta is negative
+                    // Release stock (delta is negative)
+                    $record->reserved = $this->releaseFrom((float) $record->reserved, -$delta, \App\Models\Sku::find($skuId)?->code ?? (string) $skuId);
                     $movementType = 'reserve_released';
                 }
 
@@ -371,6 +371,24 @@ class StockService
                 );
             }
         });
+    }
+
+    /**
+     * Releasing more than is reserved means two documents are fighting over
+     * the same reservation (e.g. a cancel racing a confirm). Silently
+     * clamping to zero used to swallow that and eat another sheet's
+     * reservation; failing loudly rolls the whole transaction back instead.
+     * Only sub-thousandth float dust is absorbed.
+     */
+    private function releaseFrom(float $reserved, float $quantity, string $skuCode): float
+    {
+        $remaining = $reserved - $quantity;
+
+        if ($remaining < -0.0005) {
+            throw new \RuntimeException("Reservation mismatch for {$skuCode}: tried to release {$quantity} but only {$reserved} is reserved. Nothing was changed — refresh and try again.");
+        }
+
+        return max(0.0, $remaining);
     }
 
     public function processDispatch(DispatchSheet $sheet): void

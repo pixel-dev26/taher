@@ -193,14 +193,18 @@
                     <i class="bi bi-x-circle me-1"></i> Cancel Dispatch
                 </button>
             @endif
-            @if($dispatchSheet->pdf_path)
-                <a href="{{ route('dispatch-sheets.pdf', $dispatchSheet) }}" class="btn btn-outline-secondary">
-                    <i class="bi bi-file-pdf me-1"></i> Download PDF
+            <a href="{{ route('dispatch-sheets.pdf', $dispatchSheet) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-file-pdf me-1"></i> Download PDF
+            </a>
+            @if($challanIssue)
+                <button type="button" class="btn btn-outline-secondary" disabled title="{{ $challanIssue }}">
+                    <i class="bi bi-receipt me-1"></i> Download Challan
+                </button>
+            @else
+                <a href="{{ route('dispatch-sheets.challan', $dispatchSheet) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-receipt me-1"></i> Download Challan
                 </a>
             @endif
-            <a href="{{ route('dispatch-sheets.challan', $dispatchSheet) }}" class="btn btn-outline-secondary">
-                <i class="bi bi-receipt me-1"></i> Download Challan
-            </a>
             @if(in_array($dispatchSheet->status, ['pending', 'dispatched']))
                 <button type="button" class="btn btn-primary" id="sharePdfBtn" onclick="sharePdf()">
                     <i class="bi bi-share-fill me-1"></i> Share

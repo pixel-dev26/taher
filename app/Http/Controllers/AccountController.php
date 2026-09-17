@@ -23,7 +23,14 @@ class AccountController extends Controller
                 'name' => 'required|string|max:255',
                 'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
                 'current_password' => ['required', 'current_password'],
-                'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
+                'password' => [
+                    'required', 'confirmed', Password::min(8)->mixedCase()->numbers(),
+                    function ($attribute, $value, $fail) use ($user) {
+                        if (Hash::check($value, $user->password)) {
+                            $fail('The new password must be different from your current password.');
+                        }
+                    },
+                ],
             ]);
 
             $user->update([
@@ -31,6 +38,11 @@ class AccountController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
             ]);
+
+            $user->invalidateOtherSessions($request->session()->getId());
+            if (auth()->viaRemember()) {
+                auth()->login($user, true);
+            }
 
             return back()->with('success', 'Account updated and password changed successfully.');
         }

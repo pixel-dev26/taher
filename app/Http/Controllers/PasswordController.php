@@ -15,16 +15,32 @@ class PasswordController extends Controller
 
     public function change(Request $request)
     {
+        $user = auth()->user();
+
         $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
+            'password' => [
+                'required', 'confirmed', Password::min(8)->mixedCase()->numbers(),
+                // The whole point of a forced first-login change is that the
+                // admin who handed out the temporary password shouldn't know
+                // the real one — so re-entering the temporary one doesn't count.
+                function ($attribute, $value, $fail) use ($user) {
+                    if (Hash::check($value, $user->password)) {
+                        $fail('The new password must be different from your current password.');
+                    }
+                },
+            ],
         ]);
 
-        $user = auth()->user();
         $user->update([
             'password' => Hash::make($request->password),
             'must_change_password' => false,
         ]);
+
+        $user->invalidateOtherSessions($request->session()->getId());
+        if (auth()->viaRemember()) {
+            auth()->login($user, true);
+        }
 
         return redirect('/dashboard')->with('success', 'Password changed successfully!');
     }

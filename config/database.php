@@ -3,7 +3,7 @@
 use Illuminate\Support\Str;
 
 return [
-    'default' => env('DB_CONNECTION', 'mysql'),
+    'default' => env('DB_CONNECTION', 'sqlite'),
 
     'connections' => [
         'sqlite' => [
@@ -12,6 +12,13 @@ return [
             'database' => env('DB_DATABASE', database_path('database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+            // Several staff write at once. WAL lets readers and the writer
+            // coexist, and the busy timeout makes a second writer wait its
+            // turn instead of failing with "database is locked". See also
+            // App\Database\ImmediateSQLiteConnection.
+            'busy_timeout' => 5000,
+            'journal_mode' => 'wal',
+            'synchronous' => 'normal',
         ],
 
         'mysql' => [

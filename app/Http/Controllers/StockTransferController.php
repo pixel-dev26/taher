@@ -91,21 +91,30 @@ class StockTransferController extends Controller
 
             return redirect()->route('stock-transfers.show', $transfer)
                 ->with('success', "Transfer {$transfer->transfer_number} created successfully.");
-        } catch (InsufficientStockException $e) {
+        } catch (InsufficientStockException | \RuntimeException $e) {
             return back()->withInput()->with('error', $e->getMessage());
-        } catch (\Exception $e) {
-            return back()->withInput()->with('error', 'Failed to create transfer: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            // Never echo a raw database error (it carries the SQL and the
+            // typed values) — log it and show something a user can act on.
+            report($e);
+            return back()->withInput()->with('error', 'Failed to create the transfer. Please try again; if it keeps happening, contact your administrator.');
         }
     }
 
     public function show(StockTransfer $stockTransfer)
     {
         $stockTransfer->load(['items.sku', 'sourceGodown', 'destGodown', 'creator', 'resolver']);
-        return view('stock-transfers.show', compact('stockTransfer'));
+        $challanIssue = $this->pdfService->challanBlocker($stockTransfer);
+
+        return view('stock-transfers.show', compact('stockTransfer', 'challanIssue'));
     }
 
     public function downloadChallan(StockTransfer $stockTransfer)
     {
+        if ($issue = $this->pdfService->challanBlocker($stockTransfer)) {
+            return back()->with('error', $issue);
+        }
+
         return $this->pdfService->generateTransferChallanPdf($stockTransfer)
             ->download("{$stockTransfer->transfer_number}-challan.pdf");
     }
@@ -130,7 +139,9 @@ class StockTransferController extends Controller
     {
         return $items->map(function ($item) {
             $qty = rtrim(rtrim(number_format((float) $item->quantity, 3, '.', ''), '0'), '.');
-            return "{$item->sku->code} x {$qty}";
+            $rate = $item->unit_price === null ? '-' : number_format((float) $item->unit_price, 2, '.', '');
+            $hsn = $item->hsn_code ?: '-';
+            return "{$item->sku->code} x {$qty} @ {$rate} [HSN {$hsn}]";
         })->implode(', ');
     }
 
@@ -156,8 +167,11 @@ class StockTransferController extends Controller
 
             return redirect()->route('stock-transfers.index')
                 ->with('success', "Transfer {$stockTransfer->transfer_number} accepted.");
-        } catch (\Exception $e) {
-            return back()->with('error', 'Failed to accept transfer: ' . $e->getMessage());
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->with('error', 'Failed to accept the transfer. Please try again; if it keeps happening, contact your administrator.');
         }
     }
 
@@ -183,8 +197,11 @@ class StockTransferController extends Controller
 
             return redirect()->route('stock-transfers.index')
                 ->with('success', "Transfer {$stockTransfer->transfer_number} rejected. Stock restored to source.");
-        } catch (\Exception $e) {
-            return back()->with('error', 'Failed to reject transfer: ' . $e->getMessage());
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->with('error', 'Failed to reject the transfer. Please try again; if it keeps happening, contact your administrator.');
         }
     }
 }

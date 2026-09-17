@@ -62,12 +62,20 @@ class UserController extends Controller
             'is_active' => $request->boolean('is_active'),
         ];
 
-        if ($request->filled('password')) {
+        $passwordReset = $request->filled('password');
+
+        if ($passwordReset) {
             $data['password'] = Hash::make($request->password);
             $data['must_change_password'] = true;
         }
 
         $user->update($data);
+
+        // A reset (or deactivation) is how an admin revokes access, so it has
+        // to sign the account out everywhere, not just change the hash.
+        if ($passwordReset || ! $data['is_active']) {
+            $user->invalidateOtherSessions();
+        }
 
         return redirect()->route('users.index')->with('success', 'User updated successfully.');
     }

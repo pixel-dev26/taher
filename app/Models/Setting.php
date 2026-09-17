@@ -18,10 +18,16 @@ class Setting extends Model
         return ['updated_at' => 'datetime'];
     }
 
+    /** A row whose value was blanked counts as unset, so the default still applies. */
     public static function get(string $key, $default = null): mixed
     {
         $setting = static::where('key', $key)->first();
-        return $setting ? $setting->value : $default;
+
+        if (! $setting || $setting->value === null || $setting->value === '') {
+            return $default;
+        }
+
+        return $setting->value;
     }
 
     public static function set(string $key, $value, int $userId = null): void
