@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\DispatchSheet;
 use App\Models\Setting;
+use App\Models\StockTransfer;
 use App\Support\Money;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as PdfDocument;
@@ -102,6 +103,34 @@ class PdfService
         ];
 
         $pdf = Pdf::loadView('pdf.delivery-challan', $data);
+        $pdf->setPaper('A4', 'landscape');
+
+        return $pdf;
+    }
+
+    /**
+     * A Road/Delivery Challan for an inter-godown Stock Transfer — same
+     * document family as the sales Delivery Challan above, but between two
+     * of the company's own godowns rather than to a customer, so it carries
+     * no price/tax columns (not a sale) and both ends are "Ship From" /
+     * "Ship To" godowns instead of a company + a customer.
+     */
+    public function generateTransferChallanPdf(StockTransfer $transfer): PdfDocument
+    {
+        $transfer->load(['items.sku', 'sourceGodown', 'destGodown']);
+
+        $data = [
+            'transfer' => $transfer,
+            'companyName' => Setting::get('company_name', 'Company Name'),
+            'companyLogo' => Setting::get('company_logo'),
+            'companyAddress' => Setting::get('company_address'),
+            'companyPhone' => Setting::get('company_phone'),
+            'companyFax' => Setting::get('company_fax'),
+            'companyEmail' => Setting::get('company_email'),
+            'companyGstin' => Setting::get('company_gstin'),
+        ];
+
+        $pdf = Pdf::loadView('pdf.transfer-challan', $data);
         $pdf->setPaper('A4', 'landscape');
 
         return $pdf;

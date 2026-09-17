@@ -77,7 +77,7 @@
     <div style="margin-bottom: 8px;">
         <div style="float: left; width: 52%;">
             <div class="info-section" style="margin-right: 8px;">
-                <div class="box-title">Customer Detail</div>
+                <div class="box-title">Ship To (Consignee)</div>
                 <table>
                     <tr>
                         <td class="label">M/S</td>
@@ -113,8 +113,13 @@
                         <td>{{ $sheet->created_at->format('d-M-Y') }}</td>
                     </tr>
                     <tr>
-                        <td class="label">Godown</td>
-                        <td>{{ $sheet->godown->code }} - {{ $sheet->godown->name }}</td>
+                        <td class="label">Ship From</td>
+                        <td>
+                            {{ $sheet->godown->code }} - {{ $sheet->godown->name }}
+                            @if($sheet->godown->address)
+                                <br><span style="font-weight: normal; color: #666;">{{ $sheet->godown->address }}</span>
+                            @endif
+                        </td>
                     </tr>
                     <tr>
                         <td class="label">L.R. No.</td>

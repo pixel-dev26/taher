@@ -78,6 +78,7 @@ Route::middleware(['auth', 'active', 'ensurePasswordChanged'])->group(function (
     Route::resource('stock-transfers', StockTransferController::class)->only(['index', 'create', 'store', 'show']);
     Route::patch('stock-transfers/{stock_transfer}/accept', [StockTransferController::class, 'accept'])->name('stock-transfers.accept');
     Route::patch('stock-transfers/{stock_transfer}/reject', [StockTransferController::class, 'reject'])->name('stock-transfers.reject');
+    Route::get('stock-transfers/{stock_transfer}/challan', [StockTransferController::class, 'downloadChallan'])->name('stock-transfers.challan');
 
     // Settings
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');

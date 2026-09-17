@@ -95,6 +95,12 @@
     </div>
 </div>
 
+<div class="d-flex gap-3 flex-wrap mb-4">
+    <a href="{{ route('stock-transfers.challan', $stockTransfer) }}" class="btn btn-outline-secondary">
+        <i class="bi bi-receipt me-1"></i> Download Road Challan
+    </a>
+</div>
+
 {{-- Accept / Reject buttons (only for pending transfers) --}}
 @if($stockTransfer->status === 'pending')
 <div class="card">

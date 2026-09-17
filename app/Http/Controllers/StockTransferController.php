@@ -8,13 +8,14 @@ use App\Models\Godown;
 use App\Models\StockTransfer;
 use App\Models\TransferItem;
 use App\Services\NumberGenerator;
+use App\Services\PdfService;
 use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class StockTransferController extends Controller
 {
-    public function __construct(private StockService $stockService)
+    public function __construct(private StockService $stockService, private PdfService $pdfService)
     {
     }
 
@@ -90,6 +91,12 @@ class StockTransferController extends Controller
     {
         $stockTransfer->load(['items.sku', 'sourceGodown', 'destGodown', 'creator', 'resolver']);
         return view('stock-transfers.show', compact('stockTransfer'));
+    }
+
+    public function downloadChallan(StockTransfer $stockTransfer)
+    {
+        return $this->pdfService->generateTransferChallanPdf($stockTransfer)
+            ->download("{$stockTransfer->transfer_number}-challan.pdf");
     }
 
     /** "GIP-001 x 40, GIP-002 x 20" — a readable Activity Log summary. */
