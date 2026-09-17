@@ -9,7 +9,7 @@ class DispatchSheetItem extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['dispatch_sheet_id', 'sku_id', 'quantity', 'unit_price'];
+    protected $fillable = ['dispatch_sheet_id', 'sku_id', 'quantity', 'unit_price', 'hsn_code'];
 
     protected function casts(): array
     {

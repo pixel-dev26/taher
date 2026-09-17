@@ -169,6 +169,7 @@ class SkuController extends Controller
                 'name' => $sku->name,
                 'uom' => $sku->unit_of_measure,
                 'category' => $sku->category,
+                'hsn_code' => $sku->hsn_code,
             ];
 
             if ($godownId) {

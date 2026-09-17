@@ -12,18 +12,19 @@
     button centres against the whole block and floats above the input.
 --}}
 <div id="lineItems"
-     class="line-items @if($showPrice) line-items-priced @endif"
+     class="line-items @if($showPrice) line-items-priced @endif @if($showHsn) line-items-hsn @endif"
      data-next-index="{{ $nextIndex }}"
      data-show-available="{{ $showAvailable ? '1' : '0' }}"
      data-allow-negative="{{ $allowNegative ? '1' : '0' }}"
-     data-show-price="{{ $showPrice ? '1' : '0' }}">
+     data-show-price="{{ $showPrice ? '1' : '0' }}"
+     data-show-hsn="{{ $showHsn ? '1' : '0' }}">
 
     @foreach($rows as $row)
         @php
             $i = $row['index'];
             $sku = $row['sku'];
             $avail = $row['available'];
-            $rowInvalid = $errors->has("items.{$i}.quantity") || ($showPrice && $errors->has("items.{$i}.unit_price"));
+            $rowInvalid = $errors->has("items.{$i}.quantity") || ($showPrice && $errors->has("items.{$i}.unit_price")) || ($showHsn && $errors->has("items.{$i}.hsn_code"));
             // Stock being removed (a negative correction) takes no price.
             $removing = is_numeric($row['quantity']) && (float) $row['quantity'] < 0;
         @endphp
@@ -80,14 +81,33 @@
                     </div>
                 @endif
 
+                @if($showHsn)
+                    <div class="li-hsn" @if($removing) hidden @endif>
+                        <label class="cl-label" for="hsn-{{ $i }}">HSN Code</label>
+                        <input type="text"
+                               id="hsn-{{ $i }}"
+                               name="items[{{ $i }}][hsn_code]"
+                               class="form-control @error("items.{$i}.hsn_code") is-invalid @enderror"
+                               value="{{ $row['hsn_code'] }}"
+                               maxlength="20"
+                               placeholder="e.g. 7306"
+                               @if($removing) disabled @endif
+                               required>
+                    </div>
+                @endif
+
                 <button type="button" class="btn btn-outline-danger btn-icon li-remove" aria-label="Remove {{ $sku->code }}">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>
 
-            @if($errors->has("items.{$i}.quantity") || ($showPrice && $errors->has("items.{$i}.unit_price")))
+            @if($errors->has("items.{$i}.quantity") || ($showPrice && $errors->has("items.{$i}.unit_price")) || ($showHsn && $errors->has("items.{$i}.hsn_code")))
                 <div class="li-error invalid-feedback d-block">
-                    {{ implode(' ', array_merge($errors->get("items.{$i}.quantity"), $showPrice ? $errors->get("items.{$i}.unit_price") : [])) }}
+                    {{ implode(' ', array_merge(
+                        $errors->get("items.{$i}.quantity"),
+                        $showPrice ? $errors->get("items.{$i}.unit_price") : [],
+                        $showHsn ? $errors->get("items.{$i}.hsn_code") : []
+                    )) }}
                 </div>
             @endif
         </div>
@@ -98,7 +118,9 @@
     <i class="bi bi-inbox"></i>
     <div class="empty-text">No products added yet</div>
     <div class="empty-hint">
-        @if($showPrice)
+        @if($showPrice && $showHsn)
+            Use the search box above to add products — you'll enter the quantity, price and HSN code for each
+        @elseif($showPrice)
             Use the search box above to add products — you'll enter the quantity and price for each
         @else
             Use the search box above to find and add products
@@ -155,6 +177,20 @@
                                inputmode="decimal"
                                required>
                     </div>
+                </div>
+            @endif
+
+            @if($showHsn)
+                <div class="li-hsn">
+                    <label class="cl-label" for="hsn-__I__">HSN Code</label>
+                    <input type="text"
+                           id="hsn-__I__"
+                           name="items[__I__][hsn_code]"
+                           class="form-control"
+                           value="__HSN__"
+                           maxlength="20"
+                           placeholder="e.g. 7306"
+                           required>
                 </div>
             @endif
 

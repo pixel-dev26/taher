@@ -20,6 +20,7 @@ class UpdateDispatchSheetRequest extends FormRequest
             'items.*.sku_id' => 'required|exists:skus,id',
             'items.*.quantity' => 'required|numeric|gt:0',
             'items.*.unit_price' => 'required|numeric|min:0|max:9999999999',
+            'items.*.hsn_code' => 'required|string|max:20',
             'customer_name' => 'nullable|string|max:255',
             'customer_phone' => 'nullable|string|max:20',
             'customer_gstin' => 'nullable|string|max:20',
@@ -81,6 +82,7 @@ class UpdateDispatchSheetRequest extends FormRequest
             'items.*.quantity.gt' => 'Quantity must be greater than 0.',
             'items.*.unit_price.required' => 'Enter the rate per unit for each item.',
             'items.*.unit_price.min' => 'Rate cannot be negative.',
+            'items.*.hsn_code.required' => 'Enter the HSN code for each item.',
         ];
     }
 }

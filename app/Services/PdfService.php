@@ -62,6 +62,12 @@ class PdfService
 
             return (object) [
                 'sku' => $item->sku,
+                // The rate charged and the HSN code are both captured per
+                // dispatch line (not just read from the product catalog),
+                // since neither was tracked before this document existed —
+                // the product's own value is only a fallback for lines
+                // recorded before HSN capture was required.
+                'hsn' => $item->hsn_code ?: $item->sku->hsn_code,
                 'quantity' => $quantity,
                 'rate' => $rate,
                 'taxable' => $taxable,

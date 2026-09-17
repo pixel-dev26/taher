@@ -125,7 +125,7 @@
 
             <x-sku-picker require-godown show-available placeholder="Type product name or code..." />
 
-            <x-line-items show-available qty-label="Quantity" :show-price="true" />
+            <x-line-items show-available qty-label="Quantity" :show-price="true" :show-hsn="true" />
 
             {{-- Submit --}}
             <div class="form-action-bar">

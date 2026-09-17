@@ -28,6 +28,8 @@ class LineItems extends Component
         public string $qtyLabel = 'Quantity',
         /** Ask for a price per unit on each row (stock receipts). */
         public bool $showPrice = false,
+        /** Ask for an HSN code on each row (dispatches — the Delivery Challan needs one). */
+        public bool $showHsn = false,
         /** Existing rows to fall back on when there is no old input (edit forms). */
         public array $items = [],
     ) {
@@ -84,6 +86,10 @@ class LineItems extends Component
                 'sku' => $sku,
                 'quantity' => $item['quantity'] ?? null,
                 'unit_price' => $item['unit_price'] ?? null,
+                // Falls back to the product's own HSN code (Products screen)
+                // when nothing has been typed here yet — one less thing to
+                // retype for a product that's already classified.
+                'hsn_code' => $item['hsn_code'] ?? $sku->hsn_code,
                 'available' => $record
                     ? (float) $record->on_hand - (float) $record->reserved
                     : null,

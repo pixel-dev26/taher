@@ -332,6 +332,10 @@
         /* Receipts ask for a price too, so the controls need room for two fields */
         .line-items-priced .line-item .li-controls { flex-basis: 420px; }
         .line-item .li-qty, .line-item .li-price { flex: 1 1 0; min-width: 0; }
+        /* Dispatches also ask for an HSN code — three fields need more room,
+           and wrap onto their own row on narrow screens rather than squeezing. */
+        .line-items-hsn .line-item .li-controls { flex-basis: 540px; flex-wrap: wrap; }
+        .line-item .li-hsn { flex: 0 1 110px; min-width: 90px; }
         .line-item .li-amount strong { color: var(--text-dark); }
         .line-item .cl-label {
             display: block; margin-bottom: 0.2rem; font-size: 0.68rem; text-transform: uppercase;

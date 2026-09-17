@@ -6,7 +6,7 @@
  *
  * Behaviour is driven by data attributes, so the same file serves every form:
  *   #skuSearchInput[data-sku-picker][data-godown-field][data-require-godown]
- *   #lineItems[data-next-index][data-show-available][data-allow-negative][data-show-price]
+ *   #lineItems[data-next-index][data-show-available][data-allow-negative][data-show-price][data-show-hsn]
  *   #lineItemTemplate  — the row markup, cloned per product
  */
 (function () {
@@ -27,6 +27,7 @@
     var requireGodown = picker.dataset.requireGodown === '1';
     var showAvailable = container.dataset.showAvailable === '1';
     var showPrice = container.dataset.showPrice === '1';
+    var showHsn = container.dataset.showHsn === '1';
 
     var nextIndex = parseInt(container.dataset.nextIndex, 10) || 0;
     var request = null;      // in-flight fetch, aborted when the user types again
@@ -67,6 +68,10 @@
 
     function priceInput(row) {
         return row.querySelector('.li-price input');
+    }
+
+    function hsnInput(row) {
+        return row.querySelector('.li-hsn input');
     }
 
     /** Rupees with Indian grouping, matching App\Support\Money::inr(). */
@@ -327,7 +332,8 @@
             .replace(/__CODE__/g, sku.code)
             .replace(/__NAME__/g, sku.name)
             .replace(/__UOM__/g, sku.uom)
-            .replace(/__AVAIL__/g, typeof sku.available !== 'undefined' ? tidy(sku.available) : '');
+            .replace(/__AVAIL__/g, typeof sku.available !== 'undefined' ? tidy(sku.available) : '')
+            .replace(/__HSN__/g, sku.hsn_code || '');
 
         var frag = document.createElement('div');
         frag.innerHTML = html.trim();
@@ -351,11 +357,11 @@
 
     /**
      * Returns the first input needing attention, or null when every row holds
-     * a usable quantity (and price, where asked for).
+     * a usable quantity (and price and HSN code, where asked for).
      *
-     * A missing price is only flagged once that field has been typed in, or on
-     * save ($strict) — otherwise entering a quantity would immediately flag
-     * the empty price box beside it.
+     * A missing price or HSN code is only flagged once that field has been
+     * typed in, or on save ($strict) — otherwise entering a quantity would
+     * immediately flag the other empty boxes beside it.
      */
     function validate(report, strict) {
         var firstBad = null;
@@ -371,6 +377,10 @@
             var priceBad = !!price && !(value < 0) && (price.value === '' || isNaN(priceValue) || priceValue < 0);
             var priceShown = priceBad && report && (strict || price.dataset.touched === '1');
 
+            var hsn = hsnInput(row);
+            var hsnBad = !!hsn && !(value < 0) && hsn.value.trim() === '';
+            var hsnShown = hsnBad && report && (strict || hsn.dataset.touched === '1');
+
             var slot = row.querySelector('.li-error');
             var messages = [];
 
@@ -378,7 +388,10 @@
             if (price) {
                 price.classList.toggle('is-invalid', !!priceShown);
             }
-            row.classList.toggle('line-item-invalid', !!((qtyBad && report) || priceShown));
+            if (hsn) {
+                hsn.classList.toggle('is-invalid', !!hsnShown);
+            }
+            row.classList.toggle('line-item-invalid', !!((qtyBad && report) || priceShown || hsnShown));
 
             if (qtyBad && report) {
                 messages.push(isNaN(value) || value === 0
@@ -388,14 +401,17 @@
             if (priceShown) {
                 messages.push(priceValue < 0 ? 'Price cannot be negative.' : 'Enter the price per unit.');
             }
+            if (hsnShown) {
+                messages.push('Enter the HSN code.');
+            }
 
             if (slot) {
                 slot.textContent = messages.join(' ');
                 slot.hidden = messages.length === 0;
             }
 
-            if (!firstBad && (qtyBad || priceBad)) {
-                firstBad = qtyBad ? input : price;
+            if (!firstBad && (qtyBad || priceBad || hsnBad)) {
+                firstBad = qtyBad ? input : (priceBad ? price : hsn);
             }
         });
 
@@ -443,7 +459,7 @@
     });
 
     container.addEventListener('input', function (e) {
-        if (e.target.matches('input[type=number]')) {
+        if (e.target.matches('.li-qty input, .li-price input, .li-hsn input')) {
             e.target.dataset.touched = '1';
             validate(true);
             refreshState();
@@ -482,7 +498,10 @@
                 e.preventDefault();
                 bad.focus();
                 bad.scrollIntoView({ block: 'center', behavior: 'smooth' });
-                toast(showPrice ? 'Check the highlighted quantities and prices.' : 'Check the highlighted quantities.', 'warning');
+                var what = showPrice && showHsn
+                    ? 'quantities, prices and HSN codes'
+                    : (showPrice ? 'quantities and prices' : 'quantities');
+                toast('Check the highlighted ' + what + '.', 'warning');
                 return;
             }
             submitting = true;

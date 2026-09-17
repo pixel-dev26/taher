@@ -94,8 +94,8 @@
 
             {{-- Old input wins over the saved rows, so a failed save keeps the
                  user's edits instead of reverting to what is stored. --}}
-            <x-line-items qty-label="Quantity" :show-price="true"
-                          :items="$dispatchSheet->items->map(fn($i) => ['sku_id' => $i->sku_id, 'quantity' => $i->quantity, 'unit_price' => $i->unit_price])->all()" />
+            <x-line-items qty-label="Quantity" :show-price="true" :show-hsn="true"
+                          :items="$dispatchSheet->items->map(fn($i) => ['sku_id' => $i->sku_id, 'quantity' => $i->quantity, 'unit_price' => $i->unit_price, 'hsn_code' => $i->hsn_code])->all()" />
 
             <div class="form-action-bar">
                 <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Save Changes</button>

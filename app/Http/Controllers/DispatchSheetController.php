@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateDispatchSheetRequest;
 use App\Models\DispatchSheet;
 use App\Models\DispatchSheetItem;
 use App\Models\Godown;
+use App\Models\Sku;
 use App\Services\NumberGenerator;
 use App\Services\PdfService;
 use App\Services\StockService;
@@ -130,7 +131,9 @@ class DispatchSheetController extends Controller
                         'sku_id' => $item['sku_id'],
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['unit_price'],
+                        'hsn_code' => $item['hsn_code'],
                     ]);
+                    $this->backfillHsnCode($item['sku_id'], $item['hsn_code']);
                 }
 
                 $sheet->load(['items.sku', 'godown']);
@@ -224,7 +227,9 @@ class DispatchSheetController extends Controller
                         'sku_id' => $item['sku_id'],
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['unit_price'],
+                        'hsn_code' => $item['hsn_code'],
                     ]);
+                    $this->backfillHsnCode($item['sku_id'], $item['hsn_code']);
                 }
 
                 $newItems = collect($request->items)->pluck('quantity', 'sku_id')
@@ -303,6 +308,21 @@ class DispatchSheetController extends Controller
     {
         return $this->pdfService->generateChallanPdf($dispatchSheet)
             ->download("{$dispatchSheet->ds_number}-challan.pdf");
+    }
+
+    /**
+     * The Products catalog is the long-term home for a SKU's HSN code, but
+     * most don't have one set yet — this fills it in from whatever was first
+     * typed on a dispatch, so the same product doesn't need retyping on the
+     * next one. Never overwrites a value the Products screen already has.
+     */
+    private function backfillHsnCode(int $skuId, string $hsnCode): void
+    {
+        $sku = Sku::find($skuId);
+
+        if ($sku && !$sku->hsn_code) {
+            $sku->update(['hsn_code' => $hsnCode]);
+        }
     }
 
     /** "GIP-001 x 40, GIP-002 x 20" — a readable Activity Log summary. */

@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: DejaVu Sans, sans-serif; font-size: 10px; color: #333; padding: 10px 20px; }
-        .header { border-bottom: 3px solid #002A85; padding-bottom: 6px; margin-bottom: 8px; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 10px; color: #333; padding: 8px 20px; }
+        .header { border-bottom: 3px solid #002A85; padding-bottom: 4px; margin-bottom: 6px; }
         .header h1 { color: #002A85; font-size: 20px; }
         .header .company { font-size: 14px; font-weight: bold; }
         .header .gstin { font-size: 10px; font-weight: bold; color: #002A85; margin-top: 2px; }
@@ -16,29 +16,30 @@
         .letterhead img { max-width: 320px; max-height: 70px; }
         .letterhead .company-contact { font-size: 9px; color: #002A85; font-weight: bold; margin-top: 4px; line-height: 1.5; }
 
-        .info-section { border: 1px solid #ddd; }
-        .info-section .box-title { background-color: #002A85; color: #fff; font-weight: bold; font-size: 10px; padding: 3px 8px; }
+        .info-section { border: 1px solid #ddd; page-break-inside: avoid; }
+        .info-section .box-title { background-color: #002A85; color: #fff; font-weight: bold; font-size: 10px; padding: 2px 8px; }
         .info-section table { width: 100%; }
-        .info-section td { padding: 2px 8px; vertical-align: top; font-size: 9.5px; }
+        .info-section td { padding: 1px 8px; vertical-align: top; font-size: 9.5px; }
         .info-section .label { font-weight: bold; color: #555; width: 95px; }
 
         .items-table { width: 100%; border-collapse: collapse; margin-top: 2px; }
-        .items-table th { background-color: #002A85; color: #fff; padding: 5px 4px; text-align: left; font-size: 8.5px; border: 1px solid #002A85; }
-        .items-table td { border: 1px solid #ddd; padding: 5px 4px; font-size: 9px; }
+        .items-table th { background-color: #002A85; color: #fff; padding: 3px 4px; text-align: left; font-size: 8.5px; border: 1px solid #002A85; }
+        .items-table td { border: 1px solid #ddd; padding: 3px 4px; font-size: 9px; }
         .items-table tbody tr:nth-child(even) { background-color: #f9f9f9; }
-        .items-table tfoot td { border-top: 2px solid #002A85; font-weight: bold; background-color: #f0f3f8; }
+        .items-table tbody tr { page-break-inside: avoid; }
+        .items-table tfoot td { border-top: 2px solid #002A85; font-weight: bold; background-color: #f0f3f8; padding: 3px 4px; }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
 
         .totals-table { width: 100%; border: 1px solid #ddd; border-collapse: collapse; }
-        .totals-table td { padding: 4px 8px; font-size: 9.5px; border-bottom: 1px solid #eee; }
+        .totals-table td { padding: 3px 8px; font-size: 9.5px; border-bottom: 1px solid #eee; }
         .totals-table td:last-child { text-align: right; }
         .totals-table .grand-total td { font-weight: bold; font-size: 10.5px; border-top: 2px solid #002A85; border-bottom: none; }
         .totals-table .eoe td { font-size: 8px; color: #999; text-align: right; border-bottom: none; padding-top: 0; }
 
-        .signature-box { margin-top: 6px; text-align: center; font-size: 9px; }
+        .signature-box { margin-top: 4px; text-align: center; font-size: 9px; page-break-inside: avoid; }
         .signature-box .for-company { font-weight: bold; font-size: 10px; margin-top: 3px; }
-        .signature-box .stamp-note { margin-top: 10px; color: #999; }
+        .signature-box .stamp-note { margin-top: 5px; color: #999; }
         .signature-box .signatory-line { margin-top: 3px; }
 
         .footer { margin-top: 4px; text-align: center; color: #999; font-size: 9px; border-top: 1px solid #ddd; padding-top: 4px; }
@@ -169,7 +170,7 @@
                 <td>
                     {{ $line->sku->name }}
                 </td>
-                <td>{{ $line->sku->hsn_code ?? '-' }}</td>
+                <td>{{ $line->hsn ?? '-' }}</td>
                 <td class="text-right">{{ number_format($line->quantity, $line->quantity == intval($line->quantity) ? 0 : 3) }}</td>
                 <td>{{ $line->sku->unit_of_measure }}</td>
                 <td class="text-right">{{ number_format($line->rate, 2) }}</td>
@@ -198,7 +199,7 @@
         </tfoot>
     </table>
 
-    <div style="margin-top: 8px;">
+    <div style="margin-top: 5px;">
         <div style="float: left; width: 58%;">
             <div class="info-section" style="margin-right: 10px;">
                 <div class="box-title">Total in Words</div>

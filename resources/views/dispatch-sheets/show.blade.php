@@ -136,6 +136,9 @@
                         <th style="width: 50px;">#</th>
                         <th>SKU Code</th>
                         <th>Product</th>
+                        @if($priced)
+                            <th>HSN</th>
+                        @endif
                         <th class="text-end">Quantity</th>
                         <th>UoM</th>
                         @if($priced)
@@ -149,6 +152,9 @@
                         <td class="text-muted">{{ $i + 1 }}</td>
                         <td><code>{{ $item->sku->code }}</code></td>
                         <td class="fw-semibold">{{ $item->sku->name }}</td>
+                        @if($priced)
+                            <td data-label="HSN">{{ $item->hsn_code ?? '-' }}</td>
+                        @endif
                         <td class="text-end fw-bold" data-label="Quantity">{{ number_format($item->quantity, $item->quantity == intval($item->quantity) ? 0 : 3) }}</td>
                         <td data-label="Unit">{{ $item->sku->unit_of_measure }}</td>
                         @if($priced)
@@ -161,6 +167,9 @@
                 <tfoot>
                     <tr style="background-color: #F0F3F5;">
                         <td colspan="3" class="fw-bold">Total</td>
+                        @if($priced)
+                            <td></td>
+                        @endif
                         <td class="text-end fw-bold" style="font-size: 0.9rem;" data-label="Quantity">{{ number_format($dispatchSheet->items->sum('quantity'), 0) }}</td>
                         <td></td>
                         @if($priced)
