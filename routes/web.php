@@ -80,9 +80,11 @@ Route::middleware(['auth', 'active', 'ensurePasswordChanged'])->group(function (
     Route::patch('stock-transfers/{stock_transfer}/reject', [StockTransferController::class, 'reject'])->name('stock-transfers.reject');
     Route::get('stock-transfers/{stock_transfer}/challan', [StockTransferController::class, 'downloadChallan'])->name('stock-transfers.challan');
 
-    // Settings
-    Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
-    Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+    // Settings (Admin only) — company identity and GST fields here print on
+    // every legal document, so an accidental staff edit shouldn't be able to
+    // change them.
+    Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit')->middleware('admin');
+    Route::put('settings', [SettingController::class, 'update'])->name('settings.update')->middleware('admin');
 
     // Reports
     Route::prefix('reports')->name('reports.')->group(function () {

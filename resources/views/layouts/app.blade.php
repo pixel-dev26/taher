@@ -762,10 +762,10 @@
                 <a class="nav-link {{ request()->is('godowns*') ? 'active' : '' }}" href="{{ route('godowns.index') }}">
                     <i class="bi bi-building-fill"></i> Godowns
                 </a>
-                <a class="nav-link {{ request()->is('settings*') || request()->is('account*') ? 'active' : '' }}" href="{{ route('settings.edit') }}">
-                    <i class="bi bi-gear-fill"></i> Settings
-                </a>
                 @if(auth()->user()->isAdmin())
+                    <a class="nav-link {{ request()->is('settings*') ? 'active' : '' }}" href="{{ route('settings.edit') }}">
+                        <i class="bi bi-gear-fill"></i> Settings
+                    </a>
                     <a class="nav-link {{ request()->is('users*') ? 'active' : '' }}" href="{{ route('users.index') }}">
                         <i class="bi bi-people-fill"></i> Users
                     </a>
