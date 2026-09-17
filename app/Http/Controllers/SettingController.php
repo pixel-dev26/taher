@@ -18,6 +18,7 @@ class SettingController extends Controller
             'company_fax' => Setting::get('company_fax', ''),
             'company_email' => Setting::get('company_email', ''),
             'company_gstin' => Setting::get('company_gstin', ''),
+            'company_state' => Setting::get('company_state', ''),
             'default_low_stock_threshold' => Setting::get('default_low_stock_threshold', 10),
             'default_gst_rate' => Setting::get('default_gst_rate', 18),
         ];
@@ -35,6 +36,7 @@ class SettingController extends Controller
             'company_fax' => 'nullable|string|max:100',
             'company_email' => 'nullable|email|max:255',
             'company_gstin' => 'nullable|string|max:20',
+            'company_state' => 'nullable|string|max:100',
             'default_low_stock_threshold' => 'nullable|integer|min:0',
             'default_gst_rate' => 'nullable|numeric|min:0|max:100',
         ]);
@@ -54,6 +56,7 @@ class SettingController extends Controller
             'company_fax' => $request->company_fax,
             'company_email' => $request->company_email,
             'company_gstin' => $request->company_gstin,
+            'company_state' => $request->company_state,
             'default_low_stock_threshold' => $request->default_low_stock_threshold,
             'default_gst_rate' => $request->default_gst_rate,
         ];

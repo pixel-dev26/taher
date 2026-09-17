@@ -57,6 +57,12 @@
                     <div class="form-hint">Printed on the Delivery Challan header</div>
                     @error('company_gstin') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
+                <div class="col-md-4">
+                    <label for="company_state" class="form-label">State</label>
+                    <input type="text" class="form-control @error('company_state') is-invalid @enderror" id="company_state" name="company_state" value="{{ old('company_state', $settings['company_state']) }}" placeholder="e.g. 19-West Bengal">
+                    <div class="form-hint">State code and name, printed next to the GSTIN</div>
+                    @error('company_state') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
             </div>
         </div>
     </div>

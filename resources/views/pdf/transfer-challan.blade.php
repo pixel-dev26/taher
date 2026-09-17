@@ -65,6 +65,9 @@
             @if($companyGstin)
                 <div class="gstin">GSTIN: {{ $companyGstin }}</div>
             @endif
+            @if($companyState)
+                <div class="gstin">State: {{ $companyState }}</div>
+            @endif
         </div>
         <div style="float: right; text-align: right;">
             <h1>STOCK TRANSFER CHALLAN</h1>
