@@ -7,7 +7,7 @@
 FROM php:8.3-apache
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libzip-dev libpng-dev libonig-dev libxml2-dev unzip git \
+        libsqlite3-dev libzip-dev libpng-dev libonig-dev libxml2-dev unzip git \
     && docker-php-ext-install pdo pdo_sqlite mbstring gd zip xml dom \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
