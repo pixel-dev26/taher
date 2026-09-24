@@ -5,7 +5,7 @@
  * blocks on the GRN, dispatch (create and edit), transfer and adjustment forms.
  *
  * Behaviour is driven by data attributes, so the same file serves every form:
- *   #skuSearchInput[data-sku-picker][data-godown-field][data-require-godown]
+ *   #skuSearchInput[data-sku-picker][data-search-url][data-godown-field][data-require-godown]
  *   #lineItems[data-next-index][data-show-available][data-allow-negative][data-show-price][data-show-hsn]
  *   #lineItemTemplate  — the row markup, cloned per product
  *
@@ -27,6 +27,7 @@
     }
 
     var form = container.closest('form');
+    var searchUrl = picker.dataset.searchUrl;
     var godownField = picker.dataset.godownField || 'godown_id';
     var requireGodown = picker.dataset.requireGodown === '1';
     var showAvailable = container.dataset.showAvailable === '1';
@@ -243,7 +244,7 @@
         }
         request = new AbortController();
 
-        var url = '/api/sku-search?q=' + encodeURIComponent(q);
+        var url = searchUrl + '?q=' + encodeURIComponent(q);
         if (showAvailable && godownValue()) {
             url += '&godown_id=' + encodeURIComponent(godownValue());
         }

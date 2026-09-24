@@ -21,6 +21,7 @@
                aria-autocomplete="list"
                placeholder="{{ $placeholder }}"
                data-sku-picker
+               data-search-url="{{ route('api.sku-search') }}"
                data-godown-field="{{ $godownField }}"
                data-require-godown="{{ $requireGodown ? '1' : '0' }}"
                data-show-available="{{ $showAvailable ? '1' : '0' }}">

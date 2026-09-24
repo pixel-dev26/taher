@@ -16,7 +16,7 @@
                             <i class="bi bi-exclamation-triangle"></i> You must change your password before continuing.
                         </div>
                     @endif
-                    <form method="POST" action="/change-password">
+                    <form method="POST" action="{{ url('/change-password') }}">
                         @csrf
                         <div class="mb-3">
                             <label for="current_password" class="form-label">Current Password</label>
