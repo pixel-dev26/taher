@@ -1,0 +1,48 @@
+# Deployment on the VPS, sharing the box's single Caddy instance — see
+# /srv/new-horizon's Caddyfile and README for the "one Caddy per box"
+# pattern this follows. `docker compose up -d --build` is the whole thing.
+#
+# The database is a SQLite file in the named volume `taher-data`, mounted
+# OUTSIDE this repo's own directory (/var/www/taher-data, not anywhere
+# under /var/www/html) — never a bind mount into the code, so a `git pull`
+# or `git reset --hard` here can never touch the client's real business
+# data. Company logo uploads live in their own named volume for the same
+# reason: nothing a deploy does to the code should ever touch either.
+services:
+  app:
+    build: .
+    # A fixed, unique name: Caddy (and pixelos, using the same convention)
+    # reach containers across projects by this name on the shared network.
+    # Compose's own default alias is just the service name ("app"), which
+    # would collide with new-horizon's own "app" service on that network.
+    container_name: taher-app
+    restart: unless-stopped
+    environment:
+      # Caddy forwards the full /taher/* path unchanged (see the Caddyfile
+      # route and docker/apache-taher.conf's Alias) — APP_URL only matters
+      # for contexts with no real HTTP request (artisan, the rare queued
+      # job), since Laravel auto-detects the prefix from SCRIPT_NAME on
+      # every real request.
+      APP_URL: https://pixelstreet.tech/taher
+      DB_DATABASE: /var/www/taher-data/database.sqlite
+    volumes:
+      - ./.env:/var/www/html/.env:ro
+      - taher-data:/var/www/taher-data
+      - taher-uploads:/var/www/html/storage/app/public
+    # Not published to the host: only Caddy reaches it, over the shared
+    # new-horizon_default network. Nothing here is exposed to the internet
+    # directly.
+    expose:
+      - "80"
+    networks:
+      - new-horizon_default
+
+networks:
+  # Created by /srv/new-horizon's own compose file, not this one — this
+  # project only joins it so Caddy can reach this container by name.
+  new-horizon_default:
+    external: true
+
+volumes:
+  taher-data:
+  taher-uploads:
