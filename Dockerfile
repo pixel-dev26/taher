@@ -24,3 +24,11 @@ RUN mkdir -p storage/framework/sessions storage/framework/views storage/framewor
     && composer install --no-dev --optimize-autoloader --no-interaction \
     && php artisan storage:link \
     && chown -R www-data:www-data storage bootstrap/cache
+
+# Fixes ownership on the named volumes (which don't exist until the
+# container starts, so this can't be done above at image-build time) before
+# handing off to the base image's own entrypoint. See the script for why.
+COPY docker/entrypoint.sh /usr/local/bin/taher-entrypoint.sh
+RUN chmod +x /usr/local/bin/taher-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/taher-entrypoint.sh"]
+CMD ["apache2-foreground"]
