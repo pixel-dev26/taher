@@ -49,6 +49,14 @@ class SkuController extends Controller
     {
         $data = $request->validated();
 
+        // Left blank, these fall back to the column's own database default
+        // ('Other', 'Pcs', 10) instead of saving an empty string.
+        foreach (['category', 'unit_of_measure', 'low_stock_threshold', 'price'] as $field) {
+            if (($data[$field] ?? null) === null || $data[$field] === '') {
+                unset($data[$field]);
+            }
+        }
+
         // Handle variant attributes
         if (isset($data['variant_attributes'])) {
             $attrs = [];
@@ -105,6 +113,13 @@ class SkuController extends Controller
     public function update(UpdateSkuRequest $request, Sku $sku)
     {
         $data = $request->validated();
+
+        // Left blank, these keep their current value instead of being wiped.
+        foreach (['category', 'unit_of_measure', 'low_stock_threshold', 'price'] as $field) {
+            if (($data[$field] ?? null) === null || $data[$field] === '') {
+                unset($data[$field]);
+            }
+        }
 
         if (isset($data['variant_attributes'])) {
             $attrs = [];

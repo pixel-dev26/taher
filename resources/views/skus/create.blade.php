@@ -26,8 +26,8 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="category" class="form-label">Category *</label>
-                            <input type="text" class="form-control @error('category') is-invalid @enderror" id="category" name="category" value="{{ old('category') }}" list="categoryList" required>
+                            <label for="category" class="form-label">Category</label>
+                            <input type="text" class="form-control @error('category') is-invalid @enderror" id="category" name="category" value="{{ old('category') }}" list="categoryList" placeholder="Other">
                             <datalist id="categoryList">
                                 @foreach($categories as $cat)
                                 <option value="{{ $cat }}">
@@ -36,8 +36,8 @@
                             @error('category') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-md-6">
-                            <label for="unit_of_measure" class="form-label">Unit of Measure *</label>
-                            <select class="form-select @error('unit_of_measure') is-invalid @enderror" id="unit_of_measure" name="unit_of_measure" required>
+                            <label for="unit_of_measure" class="form-label">Unit of Measure</label>
+                            <select class="form-select @error('unit_of_measure') is-invalid @enderror" id="unit_of_measure" name="unit_of_measure">
                                 @foreach(['Pcs', 'Kgs', 'Ltrs', 'Mtrs', 'Ft', 'Nos', 'Box', 'Set', 'Roll', 'Bundle'] as $uom)
                                 <option value="{{ $uom }}" {{ old('unit_of_measure', 'Pcs') === $uom ? 'selected' : '' }}>{{ $uom }}</option>
                                 @endforeach
@@ -47,10 +47,10 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="price" class="form-label">Price per Unit *</label>
+                            <label for="price" class="form-label">Price per Unit</label>
                             <div class="input-group">
                                 <span class="input-group-text">₹</span>
-                                <input type="number" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price') }}" step="0.01" min="0" inputmode="decimal" required>
+                                <input type="number" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price') }}" step="0.01" min="0" inputmode="decimal">
                                 @error('price') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
                             <div class="form-hint">Starting price. Each batch you receive with its own price updates the average.</div>
@@ -58,8 +58,8 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="low_stock_threshold" class="form-label">Low Stock Threshold *</label>
-                            <input type="number" class="form-control @error('low_stock_threshold') is-invalid @enderror" id="low_stock_threshold" name="low_stock_threshold" value="{{ old('low_stock_threshold', 10) }}" min="0" required>
+                            <label for="low_stock_threshold" class="form-label">Low Stock Threshold</label>
+                            <input type="number" class="form-control @error('low_stock_threshold') is-invalid @enderror" id="low_stock_threshold" name="low_stock_threshold" value="{{ old('low_stock_threshold') }}" min="0" placeholder="10">
                             @error('low_stock_threshold') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-md-6">

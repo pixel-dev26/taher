@@ -26,8 +26,8 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="category" class="form-label">Category *</label>
-                            <input type="text" class="form-control @error('category') is-invalid @enderror" id="category" name="category" value="{{ old('category', $sku->category) }}" list="categoryList" required>
+                            <label for="category" class="form-label">Category</label>
+                            <input type="text" class="form-control @error('category') is-invalid @enderror" id="category" name="category" value="{{ old('category', $sku->category) }}" list="categoryList">
                             <datalist id="categoryList">
                                 @foreach($categories as $cat)
                                 <option value="{{ $cat }}">
@@ -35,8 +35,8 @@
                             </datalist>
                         </div>
                         <div class="col-md-6">
-                            <label for="unit_of_measure" class="form-label">Unit of Measure *</label>
-                            <select class="form-select" id="unit_of_measure" name="unit_of_measure" required>
+                            <label for="unit_of_measure" class="form-label">Unit of Measure</label>
+                            <select class="form-select" id="unit_of_measure" name="unit_of_measure">
                                 @foreach(['Pcs', 'Kgs', 'Ltrs', 'Mtrs', 'Ft', 'Nos', 'Box', 'Set', 'Roll', 'Bundle'] as $uom)
                                 <option value="{{ $uom }}" {{ old('unit_of_measure', $sku->unit_of_measure) === $uom ? 'selected' : '' }}>{{ $uom }}</option>
                                 @endforeach
@@ -56,8 +56,8 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="low_stock_threshold" class="form-label">Low Stock Threshold *</label>
-                            <input type="number" class="form-control" id="low_stock_threshold" name="low_stock_threshold" value="{{ old('low_stock_threshold', $sku->low_stock_threshold) }}" min="0" required>
+                            <label for="low_stock_threshold" class="form-label">Low Stock Threshold</label>
+                            <input type="number" class="form-control" id="low_stock_threshold" name="low_stock_threshold" value="{{ old('low_stock_threshold', $sku->low_stock_threshold) }}" min="0">
                         </div>
                         <div class="col-md-6">
                             <label for="hsn_code" class="form-label">HSN Code</label>
