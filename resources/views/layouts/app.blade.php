@@ -341,6 +341,9 @@
         .line-items-hsn .line-item .li-qty, .line-items-hsn .line-item .li-price { flex: 1 1 130px; }
         .line-item .li-hsn { flex: 0 1 110px; min-width: 90px; }
         .line-items-hsn .line-item .li-hsn { flex: 1 1 110px; }
+        /* Replaces the plain unit label for a product with a secondary unit —
+           kept just as narrow, not a full-width select. */
+        .line-item .li-unit-select { flex: 0 0 auto; width: auto; max-width: 5.5rem; }
         .line-item .li-amount strong { color: var(--text-dark); }
         .line-item .cl-label {
             display: block; margin-bottom: 0.2rem; font-size: 0.68rem; text-transform: uppercase;

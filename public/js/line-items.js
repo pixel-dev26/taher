@@ -72,6 +72,43 @@
         return row.querySelector('.li-qty input');
     }
 
+    function unitSelect(row) {
+        return row.querySelector('.li-unit-select');
+    }
+
+    /** 'secondary' only when that row's unit select is the visible, active one. */
+    function currentUnit(row) {
+        var select = unitSelect(row);
+        return select && !select.classList.contains('d-none') ? select.value : 'base';
+    }
+
+    /**
+     * Keeps every unit label in a row (available/price suffixes, and the max
+     * on the quantity field) matching whichever unit — base or secondary —
+     * is currently selected. Quantity and price themselves are left alone;
+     * the server converts them to the base unit on submit.
+     */
+    function syncUnitLabels(row) {
+        var unit = currentUnit(row);
+        var label = unit === 'secondary' ? row.dataset.secondaryUom : row.dataset.baseUom;
+        if (label) {
+            row.querySelectorAll('.li-uom').forEach(function (node) { node.textContent = label; });
+        }
+
+        var availBase = parseFloat(row.dataset.availableBase);
+        if (isNaN(availBase)) {
+            return;
+        }
+        var rate = parseFloat(row.dataset.conversionRate);
+        var shown = unit === 'secondary' && !isNaN(rate) ? availBase * rate : availBase;
+
+        qtyInput(row).max = shown;
+        var availEl = row.querySelector('.li-avail-qty');
+        if (availEl) {
+            availEl.textContent = tidy(shown.toFixed(3));
+        }
+    }
+
     function priceInput(row) {
         return row.querySelector('.li-price input');
     }
@@ -372,11 +409,28 @@
             remove.setAttribute('aria-label', 'Remove ' + sku.code);
         }
 
-        var qty = qtyInput(row);
+        row.dataset.baseUom = sku.uom;
         if (showAvailable && typeof sku.available !== 'undefined') {
-            qty.max = sku.available;
+            row.dataset.availableBase = sku.available;
         }
 
+        var select = unitSelect(row);
+        if (select && sku.secondary_uom && sku.conversion_rate) {
+            row.dataset.secondaryUom = sku.secondary_uom;
+            row.dataset.conversionRate = sku.conversion_rate;
+            select.options[0].value = 'base';
+            select.options[0].textContent = sku.uom;
+            select.options[1].value = 'secondary';
+            select.options[1].textContent = sku.secondary_uom;
+            select.value = 'base';
+            select.classList.remove('d-none');
+            var plainUom = row.querySelector('.li-qty .li-uom');
+            if (plainUom) {
+                plainUom.classList.add('d-none');
+            }
+        }
+
+        syncUnitLabels(row);
         container.appendChild(row);
         nextIndex++;
         container.dataset.nextIndex = nextIndex;
@@ -511,6 +565,23 @@
         }
     });
 
+    // Switching a row's unit changes what a typed number means, so any
+    // quantity already entered is cleared rather than silently reinterpreted
+    // under the new unit.
+    container.addEventListener('change', function (e) {
+        if (!e.target.matches('.li-unit-select')) {
+            return;
+        }
+        var row = e.target.closest('.line-item');
+        var qty = qtyInput(row);
+        qty.value = '';
+        delete qty.dataset.touched;
+        dirty = true;
+        syncUnitLabels(row);
+        validate(true);
+        refreshState();
+    });
+
     // Only when rows carry godown-specific figures (availability, quantity
     // caps) does changing the godown invalidate what's on screen. The GRN and
     // correction forms don't, so a wrong godown there is just a dropdown fix
@@ -569,6 +640,11 @@
             e.returnValue = '';
         }
     });
+
+    // Rows the server rendered after a validation failure already carry a
+    // unit select in the markup (see line-items.blade.php) — sync their
+    // labels the same way a freshly-added row is synced.
+    rows().forEach(syncUnitLabels);
 
     refreshState();
 })();

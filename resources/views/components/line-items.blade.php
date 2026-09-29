@@ -10,6 +10,14 @@
     The quantity field and the remove button sit in their own flex row aligned
     on their bottom edge, and any error is a full-width sibling — otherwise the
     button centres against the whole block and floats above the input.
+
+    A product with a secondary unit (e.g. tracked in Pieces, also sold by the
+    Metre — see Sku::hasSecondaryUnit()) gets a unit <select> instead of a
+    plain unit label; both the foreach row and the <template> carry the same
+    "plain label + select, one hidden" markup so public/js/line-items.js has
+    one code path for either. The submitted quantity/price are converted to
+    the base unit server-side (App\Http\Requests\Concerns\ConvertsLineItemUnits)
+    — the unit choice here only decides which number the person is typing.
 --}}
 <div id="lineItems"
      class="line-items @if($showPrice) line-items-priced @endif @if($showHsn) line-items-hsn @endif"
@@ -27,10 +35,16 @@
             $rowInvalid = $errors->has("items.{$i}.quantity") || ($showPrice && $errors->has("items.{$i}.unit_price")) || ($showHsn && $errors->has("items.{$i}.hsn_code"));
             // Stock being removed (a negative correction) takes no price.
             $removing = is_numeric($row['quantity']) && (float) $row['quantity'] < 0;
+            $dual = $sku->hasSecondaryUnit();
+            $unitChoice = old("items.{$i}.unit", 'base');
         @endphp
         <div class="line-item @if($rowInvalid) line-item-invalid @endif"
              id="item-row-{{ $i }}"
-             data-sku-id="{{ $sku->id }}">
+             data-sku-id="{{ $sku->id }}"
+             data-base-uom="{{ $sku->unit_of_measure }}"
+             data-secondary-uom="{{ $sku->secondary_unit_of_measure }}"
+             data-conversion-rate="{{ $sku->conversion_rate }}"
+             @if($showAvailable && $avail !== null) data-available-base="{{ $avail }}" @endif>
 
             <input type="hidden" name="items[{{ $i }}][sku_id]" value="{{ $sku->id }}">
 
@@ -38,7 +52,7 @@
                 <code class="li-code">{{ $sku->code }}</code>
                 <div class="li-name">{{ $sku->name }}</div>
                 @if($showAvailable && $avail !== null)
-                    <div class="li-avail">Available: <strong>{{ rtrim(rtrim(number_format($avail, 3, '.', ''), '0'), '.') }}</strong> {{ $sku->unit_of_measure }}</div>
+                    <div class="li-avail">Available: <strong class="li-avail-qty">{{ rtrim(rtrim(number_format($avail, 3, '.', ''), '0'), '.') }}</strong> <span class="li-uom">{{ $sku->unit_of_measure }}</span></div>
                 @endif
                 @if($showPrice)
                     <div class="li-avail li-amount" @if($removing) hidden @endif>Amount: <strong>—</strong></div>
@@ -58,13 +72,19 @@
                                @if(! $allowNegative) min="0.001" @endif
                                @if($showAvailable && $avail !== null) max="{{ $avail }}" @endif
                                required>
-                        <span class="input-group-text">{{ $sku->unit_of_measure }}</span>
+                        <span class="input-group-text li-uom @if($dual) d-none @endif">{{ $sku->unit_of_measure }}</span>
+                        <select class="form-select li-unit-select @unless($dual) d-none @endunless" name="items[{{ $i }}][unit]" aria-label="Unit">
+                            <option value="base" {{ $unitChoice === 'base' ? 'selected' : '' }}>{{ $sku->unit_of_measure }}</option>
+                            @if($dual)
+                                <option value="secondary" {{ $unitChoice === 'secondary' ? 'selected' : '' }}>{{ $sku->secondary_unit_of_measure }}</option>
+                            @endif
+                        </select>
                     </div>
                 </div>
 
                 @if($showPrice)
                     <div class="li-price" @if($removing) hidden @endif>
-                        <label class="cl-label" for="price-{{ $i }}">Price / {{ $sku->unit_of_measure }}</label>
+                        <label class="cl-label" for="price-{{ $i }}">Price / <span class="li-uom">{{ $sku->unit_of_measure }}</span></label>
                         <div class="input-group">
                             <span class="input-group-text">₹</span>
                             <input type="number"
@@ -135,7 +155,10 @@
 {{-- Cloned by public/js/line-items.js for each newly added product. Only the
      numeric __I__ / __SKU_ID__ placeholders are substituted in the markup;
      the product's code, name, unit, availability and HSN are filled in as
-     text by the script, so a product name can never be interpreted as HTML. --}}
+     text by the script, so a product name can never be interpreted as HTML.
+     Both the plain unit label and the unit <select> are always present —
+     the script shows exactly one, depending on whether the chosen product
+     has a secondary unit. --}}
 <template id="lineItemTemplate">
     <div class="line-item" id="item-row-__I__" data-sku-id="__SKU_ID__">
         <input type="hidden" name="items[__I__][sku_id]" value="__SKU_ID__">
@@ -163,6 +186,10 @@
                            @if(! $allowNegative) min="0.001" @endif
                            required>
                     <span class="input-group-text li-uom"></span>
+                    <select class="form-select li-unit-select d-none" name="items[__I__][unit]" aria-label="Unit">
+                        <option value="base"></option>
+                        <option value="secondary"></option>
+                    </select>
                 </div>
             </div>
 

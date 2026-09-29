@@ -23,6 +23,8 @@ class UpdateSkuRequest extends FormRequest
             'variant_attributes.*.key' => 'required_with:variant_attributes|string|max:100',
             'variant_attributes.*.value' => 'required_with:variant_attributes|string|max:255',
             'unit_of_measure' => 'nullable|string|max:20',
+            'secondary_unit_of_measure' => 'nullable|string|max:20|required_with:conversion_rate|different:unit_of_measure',
+            'conversion_rate' => 'nullable|numeric|gt:0|max:999999.9999|required_with:secondary_unit_of_measure',
             'low_stock_threshold' => 'nullable|integer|min:0',
             'hsn_code' => 'nullable|string|max:20',
             // Optional here: most existing products were created before prices.

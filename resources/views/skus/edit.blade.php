@@ -35,12 +35,20 @@
                             </datalist>
                         </div>
                         <div class="col-md-6">
-                            <label for="unit_of_measure" class="form-label">Unit of Measure</label>
+                            <label for="unit_of_measure" class="form-label">Base Unit</label>
                             <select class="form-select" id="unit_of_measure" name="unit_of_measure">
                                 @foreach(['Pcs', 'Kgs', 'Ltrs', 'Mtrs', 'Ft', 'Nos', 'Box', 'Set', 'Roll', 'Bundle'] as $uom)
                                 <option value="{{ $uom }}" {{ old('unit_of_measure', $sku->unit_of_measure) === $uom ? 'selected' : '' }}>{{ $uom }}</option>
                                 @endforeach
                             </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <x-secondary-unit-picker
+                                :secondary-unit="$sku->secondary_unit_of_measure"
+                                :conversion-rate="$sku->conversion_rate"
+                                :show-clear="true" />
                         </div>
                     </div>
                     <div class="row mb-3">
@@ -84,4 +92,5 @@
         </div>
     </div>
 </div>
+<script src="{{ asset('js/secondary-unit-picker.js') }}?v={{ filemtime(public_path('js/secondary-unit-picker.js')) }}"></script>
 @endsection

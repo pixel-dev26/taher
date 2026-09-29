@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ConvertsLineItemUnits;
 use App\Services\StockService;
 use App\Models\Sku;
 use Illuminate\Foundation\Http\FormRequest;
@@ -9,9 +10,16 @@ use Illuminate\Validation\Rule;
 
 class StoreStockAdjustmentRequest extends FormRequest
 {
+    use ConvertsLineItemUnits;
+
     public function authorize(): bool
     {
         return auth()->check();
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->convertLineItemUnitsToBase();
     }
 
     public function rules(): array

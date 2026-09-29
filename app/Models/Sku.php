@@ -12,7 +12,8 @@ class Sku extends Model
 
     protected $fillable = [
         'code', 'name', 'category', 'variant_attributes',
-        'unit_of_measure', 'price', 'low_stock_threshold', 'hsn_code', 'is_active',
+        'unit_of_measure', 'secondary_unit_of_measure', 'conversion_rate',
+        'price', 'low_stock_threshold', 'hsn_code', 'is_active',
     ];
 
     protected function casts(): array
@@ -20,9 +21,35 @@ class Sku extends Model
         return [
             'variant_attributes' => 'array',
             'price' => 'decimal:2',
+            'conversion_rate' => 'decimal:4',
             'is_active' => 'boolean',
             'low_stock_threshold' => 'integer',
         ];
+    }
+
+    public function hasSecondaryUnit(): bool
+    {
+        return $this->secondary_unit_of_measure !== null && (float) $this->conversion_rate > 0;
+    }
+
+    /**
+     * Quantities and prices are always stored in the base unit — see
+     * App\Http\Requests\Concerns\ConvertsLineItemUnits, which calls these
+     * before anything reaches validation or the database. conversion_rate
+     * means "1 base unit = conversion_rate secondary units".
+     */
+    public function toBaseQuantity(float $quantity, string $unit): float
+    {
+        return $unit === 'secondary' && $this->hasSecondaryUnit()
+            ? round($quantity / (float) $this->conversion_rate, 3)
+            : $quantity;
+    }
+
+    public function toBaseUnitPrice(float $price, string $unit): float
+    {
+        return $unit === 'secondary' && $this->hasSecondaryUnit()
+            ? round($price * (float) $this->conversion_rate, 2)
+            : $price;
     }
 
     public function stockRecords()

@@ -36,13 +36,18 @@
                             @error('category') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-md-6">
-                            <label for="unit_of_measure" class="form-label">Unit of Measure</label>
+                            <label for="unit_of_measure" class="form-label">Base Unit</label>
                             <select class="form-select @error('unit_of_measure') is-invalid @enderror" id="unit_of_measure" name="unit_of_measure">
                                 @foreach(['Pcs', 'Kgs', 'Ltrs', 'Mtrs', 'Ft', 'Nos', 'Box', 'Set', 'Roll', 'Bundle'] as $uom)
                                 <option value="{{ $uom }}" {{ old('unit_of_measure', 'Pcs') === $uom ? 'selected' : '' }}>{{ $uom }}</option>
                                 @endforeach
                             </select>
                             @error('unit_of_measure') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <x-secondary-unit-picker />
                         </div>
                     </div>
                     <div class="row mb-3">
@@ -77,4 +82,5 @@
         </div>
     </div>
 </div>
+<script src="{{ asset('js/secondary-unit-picker.js') }}?v={{ filemtime(public_path('js/secondary-unit-picker.js')) }}"></script>
 @endsection

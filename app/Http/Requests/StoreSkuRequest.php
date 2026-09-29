@@ -25,6 +25,10 @@ class StoreSkuRequest extends FormRequest
             'variant_attributes.*.key' => 'required_with:variant_attributes|string|max:100',
             'variant_attributes.*.value' => 'required_with:variant_attributes|string|max:255',
             'unit_of_measure' => 'nullable|string|max:20',
+            // Both required together: a rate with no unit (or vice versa)
+            // can't be converted to or from.
+            'secondary_unit_of_measure' => 'nullable|string|max:20|required_with:conversion_rate|different:unit_of_measure',
+            'conversion_rate' => 'nullable|numeric|gt:0|max:999999.9999|required_with:secondary_unit_of_measure',
             'low_stock_threshold' => 'nullable|integer|min:0',
             'hsn_code' => 'nullable|string|max:20',
             'price' => 'nullable|numeric|min:0|max:9999999999',
@@ -35,6 +39,9 @@ class StoreSkuRequest extends FormRequest
     {
         return [
             'price.min' => 'Price cannot be negative.',
+            'secondary_unit_of_measure.different' => 'The secondary unit must be different from the base unit.',
+            'secondary_unit_of_measure.required_with' => 'Choose a secondary unit, or clear the conversion rate.',
+            'conversion_rate.required_with' => 'Enter the conversion rate, or clear the secondary unit.',
         ];
     }
 }

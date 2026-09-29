@@ -121,6 +121,20 @@ class SkuController extends Controller
             }
         }
 
+        // The secondary unit follows the same "blank = unchanged" rule, with
+        // one explicit override: the edit form's "Remove" action sets this
+        // hidden flag to actually clear it back to a single-unit product.
+        if ($request->boolean('clear_secondary_unit')) {
+            $data['secondary_unit_of_measure'] = null;
+            $data['conversion_rate'] = null;
+        } else {
+            foreach (['secondary_unit_of_measure', 'conversion_rate'] as $field) {
+                if (($data[$field] ?? null) === null || $data[$field] === '') {
+                    unset($data[$field]);
+                }
+            }
+        }
+
         if (isset($data['variant_attributes'])) {
             $attrs = [];
             foreach ($data['variant_attributes'] as $attr) {
@@ -193,6 +207,8 @@ class SkuController extends Controller
                 'uom' => $sku->unit_of_measure,
                 'category' => $sku->category,
                 'hsn_code' => $sku->hsn_code,
+                'secondary_uom' => $sku->hasSecondaryUnit() ? $sku->secondary_unit_of_measure : null,
+                'conversion_rate' => $sku->hasSecondaryUnit() ? (float) $sku->conversion_rate : null,
             ];
 
             if ($godownId) {
