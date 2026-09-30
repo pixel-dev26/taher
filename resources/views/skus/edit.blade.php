@@ -118,25 +118,36 @@
                         heading="Add Stock"
                         hint="Adds this quantity to the chosen godown right now, the same as a Stock Correction. Leave both blank to make no stock change here." />
 
-                    <hr class="my-4">
-                    <h6 class="mb-1"><i class="bi bi-shield-lock me-1"></i> Admin Approval Required</h6>
-                    <p class="form-hint mt-0 mb-3">Saving any change to a product needs an admin's password, entered fresh here — not just whoever is signed in. If you're staff, ask an admin to type theirs.</p>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="admin_email" class="form-label">Admin Email</label>
-                            <input type="email" class="form-control @error('admin_email') is-invalid @enderror" id="admin_email" name="admin_email" autocomplete="off">
-                            @error('admin_email') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label for="admin_password" class="form-label">Admin Password</label>
-                            <input type="password" class="form-control @error('admin_password') is-invalid @enderror" id="admin_password" name="admin_password" autocomplete="off">
-                            @error('admin_password') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
+                    {{-- The password field lives in the modal below, but is
+                         still part of THIS form — its submit button is
+                         type="submit", so confirming there submits everything
+                         above it too. --}}
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#adminApprovalModal">
+                            <i class="bi bi-check-lg"></i> Update SKU
+                        </button>
+                        <a href="{{ route('skus.index') }}" class="btn btn-outline-secondary">Cancel</a>
                     </div>
 
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Update SKU</button>
-                        <a href="{{ route('skus.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                    <div class="modal fade" id="adminApprovalModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header border-0 pb-0">
+                                    <h5 class="modal-title"><i class="bi bi-shield-lock me-1"></i> Admin Approval Required</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="form-hint mt-0">Saving any change to a product needs an admin's password, entered fresh here — not just whoever is signed in. If you're staff, ask an admin to type theirs.</p>
+                                    <label for="admin_password" class="form-label">Admin Password</label>
+                                    <input type="password" class="form-control @error('admin_password') is-invalid @enderror" id="admin_password" name="admin_password" autocomplete="off" autofocus>
+                                    @error('admin_password') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="modal-footer border-0 pt-0">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Confirm &amp; Save</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -145,4 +156,11 @@
 </div>
 <script src="{{ asset('js/secondary-unit-picker.js') }}?v={{ filemtime(public_path('js/secondary-unit-picker.js')) }}"></script>
 <script src="{{ asset('js/godown-stock-preview.js') }}?v={{ filemtime(public_path('js/godown-stock-preview.js')) }}"></script>
+@error('admin_password')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        new bootstrap.Modal(document.getElementById('adminApprovalModal')).show();
+    });
+</script>
+@enderror
 @endsection

@@ -29,7 +29,6 @@ class UpdateSkuRequest extends FormRequest
             'name' => 'required|string|max:255',
             // Every product edit needs an admin's sign-off, entered fresh
             // here — not just whoever is already logged in. See withValidator().
-            'admin_email' => 'required|string|email',
             'admin_password' => 'required|string',
             // Left blank, these keep their current value rather than being
             // cleared — see SkuController::update(), which drops empty values
@@ -82,7 +81,11 @@ class UpdateSkuRequest extends FormRequest
                 return;
             }
 
-            $key = Str::transliterate(Str::lower((string) $this->input('admin_email')) . '|' . $this->ip());
+            // No admin identifies themselves here — just a password — so the
+            // throttle key is the requester (whoever is logged in) plus IP,
+            // not an email, and checking it means testing it against every
+            // active admin rather than one looked-up account.
+            $key = Str::transliterate('sku-approval|' . $this->user()->id . '|' . $this->ip());
 
             if (RateLimiter::tooManyAttempts($key, self::MAX_ATTEMPTS)) {
                 $seconds = RateLimiter::availableIn($key);
@@ -90,15 +93,13 @@ class UpdateSkuRequest extends FormRequest
                 return;
             }
 
-            $admin = User::where('email', $this->input('admin_email'))->first();
-            $valid = $admin && $admin->isAdmin() && $admin->is_active && Hash::check((string) $this->input('admin_password'), $admin->password);
+            $password = (string) $this->input('admin_password');
+            $admin = User::where('role', 'admin')->where('is_active', true)->get()
+                ->first(fn ($user) => Hash::check($password, $user->password));
 
-            if (!$valid) {
+            if (!$admin) {
                 RateLimiter::hit($key, self::LOCKOUT_SECONDS);
-                // Deliberately vague — doesn't confirm whether the address
-                // exists, is an admin, is active, or just has the wrong
-                // password (the same reasoning as the login form).
-                $validator->errors()->add('admin_password', 'Invalid admin credentials.');
+                $validator->errors()->add('admin_password', 'Incorrect admin password.');
                 return;
             }
 

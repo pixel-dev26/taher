@@ -158,7 +158,7 @@ class SkuController extends Controller
         // Not an Sku column — pulled out before update() and used below instead.
         $targetGodownId = $data['target_godown_id'] ?? null;
         $openingQuantity = $data['opening_quantity'] ?? null;
-        unset($data['target_godown_id'], $data['opening_quantity'], $data['admin_email'], $data['admin_password']);
+        unset($data['target_godown_id'], $data['opening_quantity'], $data['admin_password']);
 
         if (isset($data['variant_attributes'])) {
             $attrs = [];
