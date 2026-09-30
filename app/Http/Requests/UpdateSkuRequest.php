@@ -23,6 +23,30 @@ class UpdateSkuRequest extends FormRequest
         return auth()->check();
     }
 
+    /**
+     * A price entered against the secondary unit (e.g. per Mtr) is converted
+     * to the base unit (per Pcs) here, before validation. The conversion
+     * rate is whatever this submission leaves in effect: the rate typed in
+     * this same request if given, otherwise the product's existing one
+     * (blank here means "keep the current secondary unit", same as
+     * everywhere else on this form).
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('price_unit') !== 'secondary' || !is_numeric($this->input('price'))) {
+            return;
+        }
+
+        $rate = $this->input('conversion_rate');
+        $rate = is_numeric($rate) && (float) $rate > 0
+            ? (float) $rate
+            : (float) ($this->route('sku')?->conversion_rate ?? 0);
+
+        if ($rate > 0) {
+            $this->merge(['price' => round(((float) $this->input('price')) * $rate, 2)]);
+        }
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -45,6 +69,7 @@ class UpdateSkuRequest extends FormRequest
             'hsn_code' => 'nullable|string|max:20',
             // Optional here: most existing products were created before prices.
             'price' => 'nullable|numeric|min:0|max:9999999999',
+            'price_unit' => 'nullable|in:base,secondary',
             // Adds stock at a godown — left blank (the usual case), this is a
             // no-op; see SkuController::update(). Always in the base unit.
             'target_godown_id' => ['nullable', 'required_with:opening_quantity', Rule::exists('godowns', 'id')->where('is_active', 1)],

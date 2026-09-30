@@ -12,6 +12,23 @@ class StoreSkuRequest extends FormRequest
         return auth()->check();
     }
 
+    /**
+     * A price entered against the secondary unit (e.g. per Mtr) is converted
+     * to the base unit (per Pcs) here, before validation — the database and
+     * everywhere else that reads Sku::price only ever sees a base-unit price.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('price_unit') !== 'secondary' || !is_numeric($this->input('price'))) {
+            return;
+        }
+
+        $rate = $this->input('conversion_rate');
+        if (is_numeric($rate) && (float) $rate > 0) {
+            $this->merge(['price' => round(((float) $this->input('price')) * (float) $rate, 2)]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -34,6 +51,10 @@ class StoreSkuRequest extends FormRequest
             'low_stock_threshold' => 'nullable|integer|min:0',
             'hsn_code' => 'nullable|string|max:20',
             'price' => 'nullable|numeric|min:0|max:9999999999',
+            // Which unit the price above was typed against — converted to
+            // the base unit in prepareForValidation() before this point, so
+            // this itself never reaches the database.
+            'price_unit' => 'nullable|in:base,secondary',
             // Opening stock at creation — optional, and always in the base
             // unit (see SkuController::store()). Picking a godown with no
             // quantity (or vice versa) is almost certainly a mistake, so

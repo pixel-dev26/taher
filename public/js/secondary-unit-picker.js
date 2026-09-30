@@ -30,6 +30,10 @@
     var modalError = document.getElementById('modalUnitError');
     var saveBtn = document.getElementById('modalSaveUnit');
 
+    var priceUnitSelect = document.getElementById('price_unit');
+    var priceUnitBaseOption = document.querySelector('[data-price-unit-base]');
+    var priceUnitSecondaryOption = document.querySelector('[data-price-unit-secondary]');
+
     function tidy(n) {
         return parseFloat(n).toString();
     }
@@ -42,6 +46,19 @@
         if (badge) badge.classList.toggle('d-none', !has);
         if (has && badgeText) {
             badgeText.textContent = '1 ' + baseSelect.value + ' = ' + tidy(rate) + ' ' + unit;
+        }
+
+        if (priceUnitBaseOption) {
+            priceUnitBaseOption.textContent = baseSelect.value;
+        }
+        if (priceUnitSecondaryOption) {
+            priceUnitSecondaryOption.textContent = unit;
+            priceUnitSecondaryOption.classList.toggle('d-none', !has);
+            // The secondary option just disappeared — fall back to base
+            // rather than leaving an invisible option selected.
+            if (!has && priceUnitSelect && priceUnitSelect.value === 'secondary') {
+                priceUnitSelect.value = 'base';
+            }
         }
     }
 

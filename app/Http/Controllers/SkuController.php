@@ -67,7 +67,7 @@ class SkuController extends Controller
         // Not Sku columns — pulled out before create() and used below instead.
         $targetGodownId = $data['target_godown_id'] ?? null;
         $openingQuantity = $data['opening_quantity'] ?? null;
-        unset($data['target_godown_id'], $data['opening_quantity']);
+        unset($data['target_godown_id'], $data['opening_quantity'], $data['price_unit']);
 
         // Handle variant attributes
         if (isset($data['variant_attributes'])) {
@@ -158,7 +158,7 @@ class SkuController extends Controller
         // Not an Sku column — pulled out before update() and used below instead.
         $targetGodownId = $data['target_godown_id'] ?? null;
         $openingQuantity = $data['opening_quantity'] ?? null;
-        unset($data['target_godown_id'], $data['opening_quantity'], $data['admin_password']);
+        unset($data['target_godown_id'], $data['opening_quantity'], $data['admin_password'], $data['price_unit']);
 
         if (isset($data['variant_attributes'])) {
             $attrs = [];
