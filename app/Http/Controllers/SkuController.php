@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreSkuRequest;
 use App\Http\Requests\UpdateSkuRequest;
+use App\Models\ActivityLog;
 use App\Models\AdjustmentItem;
 use App\Models\Godown;
 use App\Models\Sku;
 use App\Models\StockAdjustment;
 use App\Models\StockRecord;
+use App\Models\User;
 use App\Services\NumberGenerator;
 use App\Services\StockService;
 use Illuminate\Http\Request;
@@ -156,7 +158,7 @@ class SkuController extends Controller
         // Not an Sku column — pulled out before update() and used below instead.
         $targetGodownId = $data['target_godown_id'] ?? null;
         $openingQuantity = $data['opening_quantity'] ?? null;
-        unset($data['target_godown_id'], $data['opening_quantity']);
+        unset($data['target_godown_id'], $data['opening_quantity'], $data['admin_email'], $data['admin_password']);
 
         if (isset($data['variant_attributes'])) {
             $attrs = [];
@@ -178,11 +180,33 @@ class SkuController extends Controller
             return back()->withInput()->with('error', 'Cannot deactivate a product while also adding stock to it.');
         }
 
-        DB::transaction(function () use ($sku, $data, $targetGodownId, $openingQuantity, $stockService) {
+        // UpdateSkuRequest::withValidator() already confirmed this is a real,
+        // active admin's password — checked fresh on this submission, not
+        // just whoever the current session belongs to.
+        $admin = $request->approvingAdmin;
+
+        DB::transaction(function () use ($sku, $data, $targetGodownId, $openingQuantity, $stockService, $admin) {
             $sku->update($data);
 
+            // A separate row, not folded into the automatic diff above (which
+            // is attributed to whoever is logged in — staff, most of the
+            // time): this one records who approved the edit, which may be a
+            // different person. Skipped on a no-op resubmission (nothing
+            // actually changed) so approval doesn't get logged for nothing.
+            if ($sku->wasChanged()) {
+                ActivityLog::create([
+                    'user_id' => $admin->id,
+                    'user_name' => $admin->name,
+                    'action' => 'updated',
+                    'subject_type' => Sku::class,
+                    'subject_id' => $sku->id,
+                    'subject_label' => $sku->code,
+                    'changes' => ['after' => ["Edit approved by admin {$admin->name} ({$admin->email})"]],
+                ]);
+            }
+
             if ($targetGodownId && $openingQuantity) {
-                $this->addStock($sku, (int) $targetGodownId, $openingQuantity, $stockService, 'editing');
+                $this->addStock($sku, (int) $targetGodownId, $openingQuantity, $stockService, 'editing', $admin);
             }
         });
 
@@ -198,13 +222,18 @@ class SkuController extends Controller
      * it falls back to the product's own price via averagePrices()'s
      * COALESCE, the same as any other unpriced opening stock.
      */
-    private function addStock(Sku $sku, int $godownId, $quantity, StockService $stockService, string $verb): void
+    private function addStock(Sku $sku, int $godownId, $quantity, StockService $stockService, string $verb, ?User $admin = null): void
     {
+        $note = "Opening stock entered while {$verb} {$sku->code}.";
+        if ($admin) {
+            $note .= " Approved by admin {$admin->name} ({$admin->email}).";
+        }
+
         $adjustment = StockAdjustment::withoutEvents(fn () => StockAdjustment::create([
             'adjustment_number' => NumberGenerator::adjustment(),
             'godown_id' => $godownId,
             'reason' => 'initial_load',
-            'reason_notes' => "Opening stock entered while {$verb} {$sku->code}.",
+            'reason_notes' => $note,
             'created_by' => auth()->id(),
         ]));
 

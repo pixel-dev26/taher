@@ -2,11 +2,22 @@
 
 namespace App\Http\Requests;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateSkuRequest extends FormRequest
 {
+    private const MAX_ATTEMPTS = 5;
+    private const LOCKOUT_SECONDS = 60;
+
+    /** Set once withValidator's check passes — SkuController::update() records this as who approved the edit. */
+    public ?User $approvingAdmin = null;
+
     public function authorize(): bool
     {
         return auth()->check();
@@ -16,6 +27,10 @@ class UpdateSkuRequest extends FormRequest
     {
         $rules = [
             'name' => 'required|string|max:255',
+            // Every product edit needs an admin's sign-off, entered fresh
+            // here — not just whoever is already logged in. See withValidator().
+            'admin_email' => 'required|string|email',
+            'admin_password' => 'required|string',
             // Left blank, these keep their current value rather than being
             // cleared — see SkuController::update(), which drops empty values
             // from the validated data before calling $sku->update().
@@ -55,5 +70,40 @@ class UpdateSkuRequest extends FormRequest
             'opening_quantity.required_with' => 'Enter the quantity to add, or clear the godown.',
             'opening_quantity.gt' => 'Quantity must be greater than 0.',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            // Everything else about the edit should be valid before this
+            // (rate-limited) check runs — no point spending an attempt, and
+            // no point asking again, on a submission that will fail anyway.
+            if ($validator->errors()->any()) {
+                return;
+            }
+
+            $key = Str::transliterate(Str::lower((string) $this->input('admin_email')) . '|' . $this->ip());
+
+            if (RateLimiter::tooManyAttempts($key, self::MAX_ATTEMPTS)) {
+                $seconds = RateLimiter::availableIn($key);
+                $validator->errors()->add('admin_password', "Too many attempts. Please try again in {$seconds} seconds.");
+                return;
+            }
+
+            $admin = User::where('email', $this->input('admin_email'))->first();
+            $valid = $admin && $admin->isAdmin() && $admin->is_active && Hash::check((string) $this->input('admin_password'), $admin->password);
+
+            if (!$valid) {
+                RateLimiter::hit($key, self::LOCKOUT_SECONDS);
+                // Deliberately vague — doesn't confirm whether the address
+                // exists, is an admin, is active, or just has the wrong
+                // password (the same reasoning as the login form).
+                $validator->errors()->add('admin_password', 'Invalid admin credentials.');
+                return;
+            }
+
+            RateLimiter::clear($key);
+            $this->approvingAdmin = $admin;
+        });
     }
 }

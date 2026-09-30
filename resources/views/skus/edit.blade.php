@@ -118,6 +118,22 @@
                         heading="Add Stock"
                         hint="Adds this quantity to the chosen godown right now, the same as a Stock Correction. Leave both blank to make no stock change here." />
 
+                    <hr class="my-4">
+                    <h6 class="mb-1"><i class="bi bi-shield-lock me-1"></i> Admin Approval Required</h6>
+                    <p class="form-hint mt-0 mb-3">Saving any change to a product needs an admin's password, entered fresh here — not just whoever is signed in. If you're staff, ask an admin to type theirs.</p>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="admin_email" class="form-label">Admin Email</label>
+                            <input type="email" class="form-control @error('admin_email') is-invalid @enderror" id="admin_email" name="admin_email" autocomplete="off">
+                            @error('admin_email') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label for="admin_password" class="form-label">Admin Password</label>
+                            <input type="password" class="form-control @error('admin_password') is-invalid @enderror" id="admin_password" name="admin_password" autocomplete="off">
+                            @error('admin_password') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                    </div>
+
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Update SKU</button>
                         <a href="{{ route('skus.index') }}" class="btn btn-outline-secondary">Cancel</a>
