@@ -10,6 +10,28 @@
         <div class="card">
             <div class="card-header"><h5 class="mb-0">Edit SKU: {{ $sku->code }}</h5></div>
             <div class="card-body">
+                <h6 class="mb-2">Current Stock</h6>
+                @php $totalOnHand = $stockRecords->sum('on_hand'); @endphp
+                @if($totalOnHand > 0)
+                <div class="table-responsive mb-4">
+                    <table class="table table-stack table-bordered table-sm mb-0">
+                        <thead><tr><th>Godown</th><th class="text-end">On-hand</th><th class="text-end">Reserved</th><th class="text-end">Available</th></tr></thead>
+                        <tbody>
+                            @foreach($stockRecords as $record)
+                                @continue($record->on_hand == 0 && $record->reserved == 0)
+                                <tr>
+                                    <td>{{ $record->godown->code }} — {{ $record->godown->name }}</td>
+                                    <td class="text-end">{{ number_format($record->on_hand, 3) }}</td>
+                                    <td class="text-end">{{ number_format($record->reserved, 3) }}</td>
+                                    <td class="text-end fw-bold">{{ number_format($record->available, 3) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @else
+                <p class="form-hint mt-0 mb-4">No stock in any godown yet — use "Add Stock" below, or receive it via GRN.</p>
+                @endif
                 <form method="POST" action="{{ route('skus.update', $sku) }}">
                     @csrf @method('PUT')
                     <x-form-errors />

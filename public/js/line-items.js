@@ -399,6 +399,12 @@
             avail.textContent = typeof sku.available !== 'undefined' ? tidy(sku.available) : '';
         }
 
+        var weight = row.querySelector('.li-weight');
+        if (weight && sku.weight !== null && typeof sku.weight !== 'undefined') {
+            weight.textContent = 'Weight: ' + tidy(sku.weight.toFixed(3)) + ' kg / ' + sku.uom;
+            weight.hidden = false;
+        }
+
         var hsn = hsnInput(row);
         if (hsn) {
             hsn.value = sku.hsn_code || '';

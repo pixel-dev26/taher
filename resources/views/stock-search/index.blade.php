@@ -83,6 +83,7 @@
                         <th class="text-end" title="Average purchase price per unit, weighted by the quantity in each stock receipt">Avg. Price</th>
                         <th>Category</th>
                         <th>Unit</th>
+                        <th class="text-end">Weight</th>
                         @foreach($columns as $g)
                             <th class="text-end">{{ $g->code }}</th>
                         @endforeach
@@ -114,6 +115,7 @@
                             <td class="text-end {{ isset($prices[$sku->id]) ? '' : 'text-muted' }}">{{ \App\Support\Money::inr($prices[$sku->id]['average'] ?? null) }}</td>
                             <td>{{ $sku->category }}</td>
                             <td>{{ $sku->unit_of_measure }}</td>
+                            <td class="text-end text-muted">{{ $sku->weight === null ? '—' : rtrim(rtrim(number_format($sku->weight, 3, '.', ''), '0'), '.') . ' kg' }}</td>
                             @foreach($columns as $g)
                                 @php $cell = $perGodown[$g->id]['available'] ?? 0; @endphp
                                 <td class="text-end {{ $cell <= 0 ? 'stock-zero' : ($cell <= $threshold ? 'stock-low' : '') }}">{{ number_format($cell, 0) }}</td>
@@ -152,6 +154,9 @@
                             @isset($prices[$sku->id])
                                 <div class="cl-label mt-1">Avg. price <span class="cl-value">{{ \App\Support\Money::inr($prices[$sku->id]['average']) }}</span></div>
                             @endisset
+                            @if($sku->weight !== null)
+                                <div class="cl-label mt-1">Weight <span class="cl-value">{{ rtrim(rtrim(number_format($sku->weight, 3, '.', ''), '0'), '.') }} kg</span></div>
+                            @endif
                         </div>
                         <div class="text-end flex-shrink-0">
                             <div class="cl-hero {{ $tone }}">{{ number_format($avail, 0) }}</div>

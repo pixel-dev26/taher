@@ -51,6 +51,9 @@
             <div class="li-main">
                 <code class="li-code">{{ $sku->code }}</code>
                 <div class="li-name">{{ $sku->name }}</div>
+                @if($sku->weight !== null)
+                    <div class="li-avail li-weight">Weight: {{ rtrim(rtrim(number_format($sku->weight, 3, '.', ''), '0'), '.') }} kg / {{ $sku->unit_of_measure }}</div>
+                @endif
                 @if($showAvailable && $avail !== null)
                     <div class="li-avail">Available: <strong class="li-avail-qty">{{ rtrim(rtrim(number_format($avail, 3, '.', ''), '0'), '.') }}</strong> <span class="li-uom">{{ $sku->unit_of_measure }}</span></div>
                 @endif
@@ -166,6 +169,7 @@
         <div class="li-main">
             <code class="li-code"></code>
             <div class="li-name"></div>
+            <div class="li-avail li-weight" hidden></div>
             @if($showAvailable)
                 <div class="li-avail">Available: <strong class="li-avail-qty"></strong> <span class="li-uom"></span></div>
             @endif

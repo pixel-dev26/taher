@@ -124,7 +124,8 @@ class SkuController extends Controller
     {
         $categories = Sku::distinct()->pluck('category')->sort();
         $godowns = Godown::active()->get();
-        return view('skus.edit', compact('sku', 'categories', 'godowns'));
+        $stockRecords = StockRecord::where('sku_id', $sku->id)->with('godown')->get();
+        return view('skus.edit', compact('sku', 'categories', 'godowns', 'stockRecords'));
     }
 
     public function update(UpdateSkuRequest $request, Sku $sku, StockService $stockService)
@@ -274,6 +275,7 @@ class SkuController extends Controller
                 'hsn_code' => $sku->hsn_code,
                 'secondary_uom' => $sku->hasSecondaryUnit() ? $sku->secondary_unit_of_measure : null,
                 'conversion_rate' => $sku->hasSecondaryUnit() ? (float) $sku->conversion_rate : null,
+                'weight' => $sku->weight === null ? null : (float) $sku->weight,
             ];
 
             if ($godownId) {

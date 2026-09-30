@@ -15,6 +15,10 @@
                     <tr><th>Name</th><td>{{ $sku->name }}</td></tr>
                     <tr><th>Category</th><td>{{ $sku->category }}</td></tr>
                     <tr><th>Unit of Measure</th><td>{{ $sku->unit_of_measure }}</td></tr>
+                    @if($sku->hasSecondaryUnit())
+                    <tr><th>Secondary Unit</th><td>1 {{ $sku->unit_of_measure }} = {{ rtrim(rtrim(number_format($sku->conversion_rate, 4, '.', ''), '0'), '.') }} {{ $sku->secondary_unit_of_measure }}</td></tr>
+                    @endif
+                    <tr><th>Weight</th><td>{{ $sku->weight === null ? '—' : rtrim(rtrim(number_format($sku->weight, 3, '.', ''), '0'), '.') . ' kg / ' . $sku->unit_of_measure }}</td></tr>
                     <tr>
                         <th>Average Price</th>
                         <td>

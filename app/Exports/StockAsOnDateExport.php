@@ -36,6 +36,7 @@ class StockAsOnDateExport implements FromArray, WithHeadings
                         $sku->name,
                         $sku->category,
                         $sku->unit_of_measure,
+                        $sku->weight === null ? null : (float) $sku->weight,
                         $godowns[$id]->name,
                         $figures['on_hand'],
                         $figures['reserved'],
@@ -51,6 +52,6 @@ class StockAsOnDateExport implements FromArray, WithHeadings
 
     public function headings(): array
     {
-        return ['SKU Code', 'Product', 'Category', 'UoM', 'Godown', 'On-Hand', 'Reserved', 'Available', 'Avg. Price (₹)'];
+        return ['SKU Code', 'Product', 'Category', 'UoM', 'Weight (kg)', 'Godown', 'On-Hand', 'Reserved', 'Available', 'Avg. Price (₹)'];
     }
 }
