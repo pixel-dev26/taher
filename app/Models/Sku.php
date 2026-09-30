@@ -12,7 +12,7 @@ class Sku extends Model
 
     protected $fillable = [
         'code', 'name', 'category', 'variant_attributes',
-        'unit_of_measure', 'secondary_unit_of_measure', 'conversion_rate',
+        'unit_of_measure', 'secondary_unit_of_measure', 'conversion_rate', 'weight',
         'price', 'low_stock_threshold', 'hsn_code', 'is_active',
     ];
 
@@ -22,6 +22,7 @@ class Sku extends Model
             'variant_attributes' => 'array',
             'price' => 'decimal:2',
             'conversion_rate' => 'decimal:4',
+            'weight' => 'decimal:3',
             'is_active' => 'boolean',
             'low_stock_threshold' => 'integer',
         ];

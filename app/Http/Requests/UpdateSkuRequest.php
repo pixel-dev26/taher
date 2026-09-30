@@ -25,6 +25,7 @@ class UpdateSkuRequest extends FormRequest
             'unit_of_measure' => 'nullable|string|max:20',
             'secondary_unit_of_measure' => 'nullable|string|max:20|required_with:conversion_rate|different:unit_of_measure',
             'conversion_rate' => 'nullable|numeric|gt:0|max:999999.9999|required_with:secondary_unit_of_measure',
+            'weight' => 'nullable|numeric|min:0|max:999999.999',
             'low_stock_threshold' => 'nullable|integer|min:0',
             'hsn_code' => 'nullable|string|max:20',
             // Optional here: most existing products were created before prices.

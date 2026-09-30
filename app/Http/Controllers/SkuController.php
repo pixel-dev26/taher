@@ -4,11 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreSkuRequest;
 use App\Http\Requests\UpdateSkuRequest;
+use App\Models\AdjustmentItem;
 use App\Models\Godown;
 use App\Models\Sku;
+use App\Models\StockAdjustment;
 use App\Models\StockRecord;
+use App\Services\NumberGenerator;
 use App\Services\StockService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SkuController extends Controller
 {
@@ -42,10 +46,11 @@ class SkuController extends Controller
     public function create()
     {
         $categories = Sku::distinct()->pluck('category')->sort();
-        return view('skus.create', compact('categories'));
+        $godowns = Godown::active()->get();
+        return view('skus.create', compact('categories', 'godowns'));
     }
 
-    public function store(StoreSkuRequest $request)
+    public function store(StoreSkuRequest $request, StockService $stockService)
     {
         $data = $request->validated();
 
@@ -56,6 +61,11 @@ class SkuController extends Controller
                 unset($data[$field]);
             }
         }
+
+        // Not Sku columns — pulled out before create() and used below instead.
+        $targetGodownId = $data['target_godown_id'] ?? null;
+        $openingQuantity = $data['opening_quantity'] ?? null;
+        unset($data['target_godown_id'], $data['opening_quantity']);
 
         // Handle variant attributes
         if (isset($data['variant_attributes'])) {
@@ -68,18 +78,50 @@ class SkuController extends Controller
             $data['variant_attributes'] = !empty($attrs) ? $attrs : null;
         }
 
-        $sku = Sku::create($data);
+        DB::transaction(function () use ($data, $targetGodownId, $openingQuantity, $stockService) {
+            $sku = Sku::create($data);
 
-        // Create stock records for all active godowns
-        $godowns = Godown::active()->get();
-        foreach ($godowns as $godown) {
-            StockRecord::create([
-                'sku_id' => $sku->id,
-                'godown_id' => $godown->id,
-                'on_hand' => 0,
-                'reserved' => 0,
-            ]);
-        }
+            // Create stock records for all active godowns
+            $godowns = Godown::active()->get();
+            foreach ($godowns as $godown) {
+                StockRecord::create([
+                    'sku_id' => $sku->id,
+                    'godown_id' => $godown->id,
+                    'on_hand' => 0,
+                    'reserved' => 0,
+                ]);
+            }
+
+            // An opening quantity at one godown is recorded the same way any
+            // other stock addition is — a real, auditable Stock Adjustment
+            // (reason: initial_load) — rather than writing to StockRecord
+            // directly, so it appears in the ledger and Activity Log like
+            // any other stock movement. unit_price is left null: it falls
+            // back to the product's own price via averagePrices()'s
+            // COALESCE, the same as any other unpriced opening stock.
+            if ($targetGodownId && $openingQuantity) {
+                $adjustment = StockAdjustment::withoutEvents(fn () => StockAdjustment::create([
+                    'adjustment_number' => NumberGenerator::adjustment(),
+                    'godown_id' => $targetGodownId,
+                    'reason' => 'initial_load',
+                    'reason_notes' => "Opening stock entered while adding {$sku->code}.",
+                    'created_by' => auth()->id(),
+                ]));
+
+                AdjustmentItem::create([
+                    'stock_adjustment_id' => $adjustment->id,
+                    'sku_id' => $sku->id,
+                    'quantity' => $openingQuantity,
+                    'unit_price' => null,
+                ]);
+
+                $adjustment->load(['items.sku', 'godown']);
+                $stockService->processAdjustment($adjustment);
+
+                $qty = rtrim(rtrim(number_format((float) $openingQuantity, 3, '.', ''), '0'), '.');
+                $adjustment->logCreatedWithItems(['items' => "{$sku->code} x +{$qty}"]);
+            }
+        });
 
         return redirect()->route('skus.index')->with('success', 'SKU created successfully.');
     }
@@ -115,7 +157,7 @@ class SkuController extends Controller
         $data = $request->validated();
 
         // Left blank, these keep their current value instead of being wiped.
-        foreach (['category', 'unit_of_measure', 'low_stock_threshold', 'price'] as $field) {
+        foreach (['category', 'unit_of_measure', 'low_stock_threshold', 'price', 'weight'] as $field) {
             if (($data[$field] ?? null) === null || $data[$field] === '') {
                 unset($data[$field]);
             }

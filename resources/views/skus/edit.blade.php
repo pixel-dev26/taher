@@ -73,6 +73,13 @@
                             @error('hsn_code') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="weight" class="form-label">Weight (kg)</label>
+                            <input type="number" class="form-control @error('weight') is-invalid @enderror" id="weight" name="weight" value="{{ old('weight', $sku->weight) }}" step="0.001" min="0" inputmode="decimal">
+                            @error('weight') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                    </div>
                     @if(auth()->user()->isAdmin())
                     <div class="mb-3 form-check">
                         <input type="hidden" name="is_active" value="0">

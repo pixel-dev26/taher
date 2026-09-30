@@ -110,6 +110,7 @@ Route::middleware(['auth', 'active', 'ensurePasswordChanged'])->group(function (
     // JSON endpoints used by the shared product picker (public/js/line-items.js)
     Route::get('api/sku-search', [SkuController::class, 'apiSearch'])->name('api.sku-search');
     Route::get('api/stock-availability/{sku}/{godown}', [StockSearchController::class, 'apiGetAvailability'])->name('api.stock-availability');
+    Route::get('api/godown-stock/{godown}', [StockSearchController::class, 'apiGodownStock'])->name('api.godown-stock');
 });
 
 require __DIR__.'/auth.php';

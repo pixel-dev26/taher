@@ -93,4 +93,26 @@ class StockSearchController extends Controller
             'available' => $this->stockService->getAvailable($sku, $godown),
         ]);
     }
+
+    /** Products currently held in one godown — used by the Add Product form's godown picker. */
+    public function apiGodownStock(Godown $godown)
+    {
+        $records = StockRecord::where('godown_id', $godown->id)
+            ->where(fn ($q) => $q->where('on_hand', '>', 0)->orWhere('reserved', '>', 0))
+            ->with('sku:id,code,name,unit_of_measure')
+            ->whereHas('sku', fn ($q) => $q->where('is_active', true))
+            ->get()
+            ->sortBy('sku.code')
+            ->values();
+
+        return response()->json([
+            'items' => $records->map(fn ($record) => [
+                'code' => $record->sku->code,
+                'name' => $record->sku->name,
+                'uom' => $record->sku->unit_of_measure,
+                'on_hand' => (float) $record->on_hand,
+            ]),
+            'total' => $records->count(),
+        ]);
+    }
 }
