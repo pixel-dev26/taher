@@ -115,7 +115,7 @@
                 <td>{{ $i + 1 }}</td>
                 <td>{{ $item->sku->code }}</td>
                 <td>{{ $item->sku->name }}</td>
-                <td class="text-right">{{ number_format($item->quantity, $item->quantity == intval($item->quantity) ? 0 : 3) }}</td>
+                <td class="text-right">{{ number_format($item->quantity, 0) }}</td>
                 <td>{{ $item->sku->unit_of_measure }}</td>
             </tr>
             @endforeach

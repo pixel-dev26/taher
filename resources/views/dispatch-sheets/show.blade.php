@@ -155,7 +155,7 @@
                         @if($priced)
                             <td data-label="HSN">{{ $item->hsn_code ?? '-' }}</td>
                         @endif
-                        <td class="text-end fw-bold" data-label="Quantity">{{ number_format($item->quantity, $item->quantity == intval($item->quantity) ? 0 : 3) }}</td>
+                        <td class="text-end fw-bold" data-label="Quantity">{{ number_format($item->quantity, 0) }}</td>
                         <td data-label="Unit">{{ $item->sku->unit_of_measure }}</td>
                         @if($priced)
                             <td class="text-end" data-label="Rate">{{ \App\Support\Money::inr($item->unit_price === null ? null : (float) $item->unit_price) }}</td>

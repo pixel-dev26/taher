@@ -63,7 +63,7 @@
                     @endif
                     <td>{{ $item->sku->code }}</td>
                     <td>{{ $item->sku->name }}</td>
-                    <td class="text-right">{{ number_format($qty, $qty == intval($qty) ? 0 : 3) }}</td>
+                    <td class="text-right">{{ number_format($qty, 0) }}</td>
                 </tr>
                 @endforeach
             @endforeach

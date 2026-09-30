@@ -55,7 +55,7 @@
                     <div class="li-avail li-weight">Weight: {{ rtrim(rtrim(number_format($sku->weight, 3, '.', ''), '0'), '.') }} kg / {{ $sku->unit_of_measure }}</div>
                 @endif
                 @if($showAvailable && $avail !== null)
-                    <div class="li-avail">Available: <strong class="li-avail-qty">{{ rtrim(rtrim(number_format($avail, 3, '.', ''), '0'), '.') }}</strong> <span class="li-uom">{{ $sku->unit_of_measure }}</span></div>
+                    <div class="li-avail">Available: <strong class="li-avail-qty">{{ number_format($avail, 0) }}</strong> <span class="li-uom">{{ $sku->unit_of_measure }}</span></div>
                 @endif
                 @if($showPrice)
                     <div class="li-avail li-amount" @if($removing) hidden @endif>Amount: <strong>—</strong></div>
@@ -71,8 +71,8 @@
                                name="items[{{ $i }}][quantity]"
                                class="form-control @error("items.{$i}.quantity") is-invalid @enderror"
                                value="{{ $row['quantity'] }}"
-                               step="0.001"
-                               @if(! $allowNegative) min="0.001" @endif
+                               step="1"
+                               @if(! $allowNegative) min="1" @endif
                                @if($showAvailable && $avail !== null) max="{{ $avail }}" @endif
                                required>
                         <span class="input-group-text li-uom @if($dual) d-none @endif">{{ $sku->unit_of_measure }}</span>
@@ -186,8 +186,8 @@
                            id="qty-__I__"
                            name="items[__I__][quantity]"
                            class="form-control"
-                           step="0.001"
-                           @if(! $allowNegative) min="0.001" @endif
+                           step="1"
+                           @if(! $allowNegative) min="1" @endif
                            required>
                     <span class="input-group-text li-uom"></span>
                     <select class="form-select li-unit-select d-none" name="items[__I__][unit]" aria-label="Unit">

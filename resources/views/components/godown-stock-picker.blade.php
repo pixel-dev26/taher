@@ -25,7 +25,7 @@
     </div>
     <div class="col-md-6">
         <label for="opening_quantity" class="form-label">Quantity to Add</label>
-        <input type="number" class="form-control @error('opening_quantity') is-invalid @enderror" id="opening_quantity" name="opening_quantity" value="{{ old('opening_quantity') }}" step="0.001" min="0" inputmode="decimal">
+        <input type="number" class="form-control @error('opening_quantity') is-invalid @enderror" id="opening_quantity" name="opening_quantity" value="{{ old('opening_quantity') }}" step="1" min="1" inputmode="numeric">
         @error('opening_quantity') <div class="invalid-feedback">{{ $message }}</div> @enderror
     </div>
 </div>

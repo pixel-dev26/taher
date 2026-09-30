@@ -247,8 +247,7 @@ class SkuController extends Controller
         $adjustment->load(['items.sku', 'godown']);
         $stockService->processAdjustment($adjustment);
 
-        $qty = rtrim(rtrim(number_format((float) $quantity, 3, '.', ''), '0'), '.');
-        $adjustment->logCreatedWithItems(['items' => "{$sku->code} x +{$qty}"]);
+        $adjustment->logCreatedWithItems(['items' => "{$sku->code} x +" . number_format((float) $quantity, 0)]);
     }
 
     public function destroy(Sku $sku)

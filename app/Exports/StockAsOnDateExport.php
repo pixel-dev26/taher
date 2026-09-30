@@ -38,9 +38,9 @@ class StockAsOnDateExport implements FromArray, WithHeadings
                         $sku->unit_of_measure,
                         $sku->weight === null ? null : (float) $sku->weight,
                         $godowns[$id]->name,
-                        $figures['on_hand'],
-                        $figures['reserved'],
-                        $figures['available'],
+                        (int) $figures['on_hand'],
+                        (int) $figures['reserved'],
+                        (int) $figures['available'],
                         isset($prices[$sku->id]) ? round($prices[$sku->id]['average'], 2) : null,
                     ];
                 }

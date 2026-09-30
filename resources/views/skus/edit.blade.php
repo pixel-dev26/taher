@@ -21,9 +21,9 @@
                                 @continue($record->on_hand == 0 && $record->reserved == 0)
                                 <tr>
                                     <td>{{ $record->godown->code }} — {{ $record->godown->name }}</td>
-                                    <td class="text-end">{{ number_format($record->on_hand, 3) }}</td>
-                                    <td class="text-end">{{ number_format($record->reserved, 3) }}</td>
-                                    <td class="text-end fw-bold">{{ number_format($record->available, 3) }}</td>
+                                    <td class="text-end">{{ number_format($record->on_hand, 0) }}</td>
+                                    <td class="text-end">{{ number_format($record->reserved, 0) }}</td>
+                                    <td class="text-end fw-bold">{{ number_format($record->available, 0) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

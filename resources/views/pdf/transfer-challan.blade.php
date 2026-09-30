@@ -188,7 +188,7 @@
                     {{ $line->sku->name }}
                 </td>
                 <td>{{ $line->hsn ?? '-' }}</td>
-                <td class="text-right">{{ number_format($line->quantity, $line->quantity == intval($line->quantity) ? 0 : 3) }}</td>
+                <td class="text-right">{{ number_format($line->quantity, 0) }}</td>
                 <td>{{ $line->sku->unit_of_measure }}</td>
                 <td class="text-right">{{ number_format($line->rate, 2) }}</td>
                 <td class="text-right">{{ number_format($line->taxable, 2) }}</td>
@@ -204,7 +204,7 @@
             <tr>
                 <td colspan="3" class="text-right">Total</td>
                 @php $qtySum = $lines->sum('quantity'); @endphp
-                <td class="text-right">{{ number_format($qtySum, $qtySum == intval($qtySum) ? 0 : 3) }}</td>
+                <td class="text-right">{{ number_format($qtySum, 0) }}</td>
                 <td></td>
                 <td></td>
                 <td class="text-right">{{ number_format($taxableTotal, 2) }}</td>

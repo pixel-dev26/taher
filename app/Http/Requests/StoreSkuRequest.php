@@ -60,7 +60,7 @@ class StoreSkuRequest extends FormRequest
             // quantity (or vice versa) is almost certainly a mistake, so
             // each requires the other rather than silently doing nothing.
             'target_godown_id' => ['nullable', 'required_with:opening_quantity', Rule::exists('godowns', 'id')->where('is_active', 1)],
-            'opening_quantity' => 'nullable|required_with:target_godown_id|numeric|gt:0|max:999999999',
+            'opening_quantity' => 'nullable|required_with:target_godown_id|integer|gt:0|max:999999999',
         ];
     }
 
@@ -75,6 +75,7 @@ class StoreSkuRequest extends FormRequest
             'target_godown_id.exists' => 'That godown is not active.',
             'opening_quantity.required_with' => 'Enter the opening quantity, or clear the godown.',
             'opening_quantity.gt' => 'Opening quantity must be greater than 0.',
+            'opening_quantity.integer' => 'Opening quantity must be a whole number.',
         ];
     }
 }

@@ -108,8 +108,7 @@ class StockAdjustmentController extends Controller
     {
         return $items->map(function ($item) {
             $qty = (float) $item->quantity;
-            $formatted = rtrim(rtrim(number_format(abs($qty), 3, '.', ''), '0'), '.');
-            return "{$item->sku->code} x " . ($qty >= 0 ? '+' : '-') . $formatted;
+            return "{$item->sku->code} x " . ($qty >= 0 ? '+' : '-') . number_format(abs($qty), 0);
         })->implode(', ');
     }
 }

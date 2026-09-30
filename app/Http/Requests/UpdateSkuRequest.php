@@ -73,7 +73,7 @@ class UpdateSkuRequest extends FormRequest
             // Adds stock at a godown — left blank (the usual case), this is a
             // no-op; see SkuController::update(). Always in the base unit.
             'target_godown_id' => ['nullable', 'required_with:opening_quantity', Rule::exists('godowns', 'id')->where('is_active', 1)],
-            'opening_quantity' => 'nullable|required_with:target_godown_id|numeric|gt:0|max:999999999',
+            'opening_quantity' => 'nullable|required_with:target_godown_id|integer|gt:0|max:999999999',
         ];
 
         // Deactivating (or reviving) a product is the app's one admin-only
@@ -93,6 +93,7 @@ class UpdateSkuRequest extends FormRequest
             'target_godown_id.exists' => 'That godown is not active.',
             'opening_quantity.required_with' => 'Enter the quantity to add, or clear the godown.',
             'opening_quantity.gt' => 'Quantity must be greater than 0.',
+            'opening_quantity.integer' => 'Quantity must be a whole number.',
         ];
     }
 

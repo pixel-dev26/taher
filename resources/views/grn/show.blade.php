@@ -68,7 +68,7 @@
                         <td>{{ $i + 1 }}</td>
                         <td><code>{{ $item->sku->code }}</code></td>
                         <td>{{ $item->sku->name }}</td>
-                        <td class="text-end fw-bold text-success" data-label="Quantity">+{{ number_format($item->quantity, $item->quantity == intval($item->quantity) ? 0 : 3) }}</td>
+                        <td class="text-end fw-bold text-success" data-label="Quantity">+{{ number_format($item->quantity, 0) }}</td>
                         <td data-label="Unit">{{ $item->sku->unit_of_measure }}</td>
                         @if($priced)
                             <td class="text-end" data-label="Price / Unit">{{ \App\Support\Money::inr($item->unit_price === null ? null : (float) $item->unit_price) }}</td>

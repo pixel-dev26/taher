@@ -31,7 +31,7 @@ class StoreStockAdjustmentRequest extends FormRequest
             'reference_doc' => 'nullable|string|max:255',
             'items' => 'required|array|min:1',
             'items.*.sku_id' => ['required', Rule::exists('skus', 'id')->where('is_active', 1)],
-            'items.*.quantity' => 'required|numeric|not_in:0|between:-999999999,999999999',
+            'items.*.quantity' => 'required|integer|not_in:0|between:-999999999,999999999',
             'items.*.unit_price' => 'nullable|numeric|min:0|max:9999999999',
         ];
     }
@@ -90,6 +90,7 @@ class StoreStockAdjustmentRequest extends FormRequest
             'godown_id.exists' => 'That godown is not active.',
             'items.*.sku_id.exists' => 'That product is not active.',
             'items.*.quantity.not_in' => 'Quantity cannot be 0.',
+            'items.*.quantity.integer' => 'Quantity must be a whole number — if entered in the secondary unit, check it divides evenly by the conversion rate.',
         ];
     }
 }

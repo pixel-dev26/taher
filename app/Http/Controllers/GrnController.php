@@ -105,8 +105,7 @@ class GrnController extends Controller
     private function itemsSummary($items): string
     {
         return $items->map(function ($item) {
-            $qty = rtrim(rtrim(number_format((float) $item->quantity, 3, '.', ''), '0'), '.');
-            return "{$item->sku->code} x {$qty}";
+            return "{$item->sku->code} x " . number_format((float) $item->quantity, 0);
         })->implode(', ');
     }
 }

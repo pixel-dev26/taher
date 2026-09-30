@@ -34,7 +34,7 @@ class UpdateDispatchSheetRequest extends FormRequest
         return [
             'items' => 'required|array|min:1',
             'items.*.sku_id' => 'required|exists:skus,id',
-            'items.*.quantity' => 'required|numeric|gt:0|max:999999999',
+            'items.*.quantity' => 'required|integer|gt:0|max:999999999',
             'items.*.unit_price' => 'required|numeric|min:0|max:9999999999',
             'items.*.hsn_code' => 'required|string|max:20',
             'customer_name' => 'nullable|string|max:255',
@@ -96,6 +96,7 @@ class UpdateDispatchSheetRequest extends FormRequest
         return [
             'items.*.sku_id.required' => 'Please select a SKU for each item.',
             'items.*.quantity.gt' => 'Quantity must be greater than 0.',
+            'items.*.quantity.integer' => 'Quantity must be a whole number — if entered in the secondary unit, check it divides evenly by the conversion rate.',
             'items.*.unit_price.required' => 'Enter the rate per unit for each item.',
             'items.*.unit_price.min' => 'Rate cannot be negative.',
             'items.*.hsn_code.required' => 'Enter the HSN code for each item.',

@@ -26,7 +26,7 @@
                                 <span class="fw-bold">{{ \App\Support\Money::inr($price['average']) }}</span> / {{ $sku->unit_of_measure }}
                                 <div class="small text-muted">
                                     @if($price['quantity'] > 0)
-                                        Across {{ rtrim(rtrim(number_format($price['quantity'], 3, '.', ','), '0'), '.') }} {{ $sku->unit_of_measure }} brought in
+                                        Across {{ number_format($price['quantity'], 0) }} {{ $sku->unit_of_measure }} brought in
                                     @else
                                         Product price — no stock brought in yet
                                     @endif
@@ -116,7 +116,7 @@
                                         <div class="small text-muted">Correction · {{ $godownCodes[$line->godown_id] ?? '' }}</div>
                                     @endif
                                 </td>
-                                <td class="text-end" data-label="Quantity">{{ number_format($quantity, $quantity == intval($quantity) ? 0 : 3) }}</td>
+                                <td class="text-end" data-label="Quantity">{{ number_format($quantity, 0) }}</td>
                                 <td class="text-end" data-label="Price / Unit">
                                     {{ \App\Support\Money::inr($unitPrice === null ? null : (float) $unitPrice) }}
                                     @if($line->unit_price === null && $unitPrice !== null)

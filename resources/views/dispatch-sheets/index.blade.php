@@ -140,7 +140,7 @@
                                     <summary style="cursor:pointer;">{{ $sheet->items->count() }} items</summary>
                                     <div class="small mt-1">
                                         @foreach($sheet->items as $item)
-                                            <div>{{ $item->sku->code }} — {{ rtrim(rtrim(number_format($item->quantity, 3, '.', ''), '0'), '.') }} {{ $item->sku->unit_of_measure }}</div>
+                                            <div>{{ $item->sku->code }} — {{ number_format($item->quantity, 0) }} {{ $item->sku->unit_of_measure }}</div>
                                         @endforeach
                                     </div>
                                 </details>
@@ -196,7 +196,7 @@
                         @foreach($sheet->items as $item)
                             <div class="cl-row mt-1">
                                 <span class="cl-label">{{ $item->sku->code }}</span>
-                                <span class="cl-value">{{ rtrim(rtrim(number_format($item->quantity, 3, '.', ''), '0'), '.') }} {{ $item->sku->unit_of_measure }}</span>
+                                <span class="cl-value">{{ number_format($item->quantity, 0) }} {{ $item->sku->unit_of_measure }}</span>
                             </div>
                         @endforeach
                     </details>

@@ -138,7 +138,7 @@ class StockTransferController extends Controller
     private function itemsSummary($items): string
     {
         return $items->map(function ($item) {
-            $qty = rtrim(rtrim(number_format((float) $item->quantity, 3, '.', ''), '0'), '.');
+            $qty = number_format((float) $item->quantity, 0);
             $rate = $item->unit_price === null ? '-' : number_format((float) $item->unit_price, 2, '.', '');
             $hsn = $item->hsn_code ?: '-';
             return "{$item->sku->code} x {$qty} @ {$rate} [HSN {$hsn}]";

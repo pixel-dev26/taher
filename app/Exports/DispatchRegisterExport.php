@@ -41,7 +41,7 @@ class DispatchRegisterExport implements FromCollection, WithHeadings, WithMappin
                     'status' => ucfirst($sheet->status),
                     'sku_code' => $item->sku->code,
                     'sku_name' => $item->sku->name,
-                    'quantity' => $item->quantity,
+                    'quantity' => (int) $item->quantity,
                     'uom' => $item->sku->unit_of_measure,
                 ]);
             }
