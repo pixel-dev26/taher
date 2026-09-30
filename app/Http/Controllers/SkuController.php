@@ -92,34 +92,8 @@ class SkuController extends Controller
                 ]);
             }
 
-            // An opening quantity at one godown is recorded the same way any
-            // other stock addition is — a real, auditable Stock Adjustment
-            // (reason: initial_load) — rather than writing to StockRecord
-            // directly, so it appears in the ledger and Activity Log like
-            // any other stock movement. unit_price is left null: it falls
-            // back to the product's own price via averagePrices()'s
-            // COALESCE, the same as any other unpriced opening stock.
             if ($targetGodownId && $openingQuantity) {
-                $adjustment = StockAdjustment::withoutEvents(fn () => StockAdjustment::create([
-                    'adjustment_number' => NumberGenerator::adjustment(),
-                    'godown_id' => $targetGodownId,
-                    'reason' => 'initial_load',
-                    'reason_notes' => "Opening stock entered while adding {$sku->code}.",
-                    'created_by' => auth()->id(),
-                ]));
-
-                AdjustmentItem::create([
-                    'stock_adjustment_id' => $adjustment->id,
-                    'sku_id' => $sku->id,
-                    'quantity' => $openingQuantity,
-                    'unit_price' => null,
-                ]);
-
-                $adjustment->load(['items.sku', 'godown']);
-                $stockService->processAdjustment($adjustment);
-
-                $qty = rtrim(rtrim(number_format((float) $openingQuantity, 3, '.', ''), '0'), '.');
-                $adjustment->logCreatedWithItems(['items' => "{$sku->code} x +{$qty}"]);
+                $this->addStock($sku, (int) $targetGodownId, $openingQuantity, $stockService, 'adding');
             }
         });
 
@@ -149,10 +123,11 @@ class SkuController extends Controller
     public function edit(Sku $sku)
     {
         $categories = Sku::distinct()->pluck('category')->sort();
-        return view('skus.edit', compact('sku', 'categories'));
+        $godowns = Godown::active()->get();
+        return view('skus.edit', compact('sku', 'categories', 'godowns'));
     }
 
-    public function update(UpdateSkuRequest $request, Sku $sku)
+    public function update(UpdateSkuRequest $request, Sku $sku, StockService $stockService)
     {
         $data = $request->validated();
 
@@ -177,6 +152,11 @@ class SkuController extends Controller
             }
         }
 
+        // Not an Sku column — pulled out before update() and used below instead.
+        $targetGodownId = $data['target_godown_id'] ?? null;
+        $openingQuantity = $data['opening_quantity'] ?? null;
+        unset($data['target_godown_id'], $data['opening_quantity']);
+
         if (isset($data['variant_attributes'])) {
             $attrs = [];
             foreach ($data['variant_attributes'] as $attr) {
@@ -193,9 +173,52 @@ class SkuController extends Controller
             return back()->withInput()->with('error', 'Cannot deactivate a product that still has stock. Move or correct the stock out first.');
         }
 
-        $sku->update($data);
+        if ($deactivating && $targetGodownId && $openingQuantity) {
+            return back()->withInput()->with('error', 'Cannot deactivate a product while also adding stock to it.');
+        }
+
+        DB::transaction(function () use ($sku, $data, $targetGodownId, $openingQuantity, $stockService) {
+            $sku->update($data);
+
+            if ($targetGodownId && $openingQuantity) {
+                $this->addStock($sku, (int) $targetGodownId, $openingQuantity, $stockService, 'editing');
+            }
+        });
 
         return redirect()->route('skus.index')->with('success', 'SKU updated successfully.');
+    }
+
+    /**
+     * Adds stock for a product at one godown, the same way a manual Stock
+     * Correction would (reason: initial_load — this app's existing reason
+     * for bootstrapping a quantity outside the normal GRN flow) — rather
+     * than writing to StockRecord directly, so it lands in the ledger and
+     * Activity Log like any other stock movement. unit_price is left null:
+     * it falls back to the product's own price via averagePrices()'s
+     * COALESCE, the same as any other unpriced opening stock.
+     */
+    private function addStock(Sku $sku, int $godownId, $quantity, StockService $stockService, string $verb): void
+    {
+        $adjustment = StockAdjustment::withoutEvents(fn () => StockAdjustment::create([
+            'adjustment_number' => NumberGenerator::adjustment(),
+            'godown_id' => $godownId,
+            'reason' => 'initial_load',
+            'reason_notes' => "Opening stock entered while {$verb} {$sku->code}.",
+            'created_by' => auth()->id(),
+        ]));
+
+        AdjustmentItem::create([
+            'stock_adjustment_id' => $adjustment->id,
+            'sku_id' => $sku->id,
+            'quantity' => $quantity,
+            'unit_price' => null,
+        ]);
+
+        $adjustment->load(['items.sku', 'godown']);
+        $stockService->processAdjustment($adjustment);
+
+        $qty = rtrim(rtrim(number_format((float) $quantity, 3, '.', ''), '0'), '.');
+        $adjustment->logCreatedWithItems(['items' => "{$sku->code} x +{$qty}"]);
     }
 
     public function destroy(Sku $sku)

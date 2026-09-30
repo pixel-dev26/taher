@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateSkuRequest extends FormRequest
 {
@@ -30,6 +31,10 @@ class UpdateSkuRequest extends FormRequest
             'hsn_code' => 'nullable|string|max:20',
             // Optional here: most existing products were created before prices.
             'price' => 'nullable|numeric|min:0|max:9999999999',
+            // Adds stock at a godown — left blank (the usual case), this is a
+            // no-op; see SkuController::update(). Always in the base unit.
+            'target_godown_id' => ['nullable', 'required_with:opening_quantity', Rule::exists('godowns', 'id')->where('is_active', 1)],
+            'opening_quantity' => 'nullable|required_with:target_godown_id|numeric|gt:0|max:999999999',
         ];
 
         // Deactivating (or reviving) a product is the app's one admin-only
@@ -40,5 +45,15 @@ class UpdateSkuRequest extends FormRequest
         }
 
         return $rules;
+    }
+
+    public function messages(): array
+    {
+        return [
+            'target_godown_id.required_with' => 'Choose a godown for the quantity, or clear it.',
+            'target_godown_id.exists' => 'That godown is not active.',
+            'opening_quantity.required_with' => 'Enter the quantity to add, or clear the godown.',
+            'opening_quantity.gt' => 'Quantity must be greater than 0.',
+        ];
     }
 }

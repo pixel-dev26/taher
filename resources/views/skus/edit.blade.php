@@ -90,6 +90,12 @@
                     @elseif(! $sku->is_active)
                     <div class="mb-3 text-muted small"><i class="bi bi-info-circle me-1"></i>This product is inactive. Ask an admin to reactivate it.</div>
                     @endif
+
+                    <x-godown-stock-picker
+                        :godowns="$godowns"
+                        heading="Add Stock"
+                        hint="Adds this quantity to the chosen godown right now, the same as a Stock Correction. Leave both blank to make no stock change here." />
+
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Update SKU</button>
                         <a href="{{ route('skus.index') }}" class="btn btn-outline-secondary">Cancel</a>
@@ -100,4 +106,5 @@
     </div>
 </div>
 <script src="{{ asset('js/secondary-unit-picker.js') }}?v={{ filemtime(public_path('js/secondary-unit-picker.js')) }}"></script>
+<script src="{{ asset('js/godown-stock-preview.js') }}?v={{ filemtime(public_path('js/godown-stock-preview.js')) }}"></script>
 @endsection
