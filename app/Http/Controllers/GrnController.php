@@ -6,6 +6,7 @@ use App\Http\Requests\StoreGrnRequest;
 use App\Models\Godown;
 use App\Models\Grn;
 use App\Models\GrnItem;
+use App\Models\Sku;
 use App\Services\NumberGenerator;
 use App\Services\StockService;
 use Illuminate\Http\Request;
@@ -76,6 +77,8 @@ class GrnController extends Controller
                     ]);
                 }
 
+                $this->updateWeights($request->items);
+
                 $grn->load(['items.sku']);
                 $this->stockService->processStockIn($grn);
 
@@ -107,5 +110,20 @@ class GrnController extends Controller
         return $items->map(function ($item) {
             return "{$item->sku->code} x " . number_format((float) $item->quantity, 0);
         })->implode(', ');
+    }
+
+    /**
+     * A manually recorded batch weight (optional, unrelated to the quantity
+     * x price calculation) updates the product's own Weight, so the most
+     * recently recorded figure is what's shown everywhere else — via
+     * Sku::update(), so it logs to the Activity Log like any other edit.
+     */
+    private function updateWeights(array $items): void
+    {
+        foreach ($items as $item) {
+            if (isset($item['weight']) && is_numeric($item['weight'])) {
+                Sku::find($item['sku_id'])?->update(['weight' => $item['weight']]);
+            }
+        }
     }
 }

@@ -79,13 +79,10 @@
                             <div class="input-group">
                                 <span class="input-group-text">₹</span>
                                 <input type="number" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price', $sku->price) }}" step="0.01" min="0" inputmode="decimal">
-                                <select class="form-select" id="price_unit" name="price_unit" style="max-width: 6.5rem;">
-                                    <option value="base" data-price-unit-base {{ old('price_unit', 'base') === 'base' ? 'selected' : '' }}>{{ old('unit_of_measure', $sku->unit_of_measure) }}</option>
-                                    <option value="secondary" class="{{ $sku->hasSecondaryUnit() ? '' : 'd-none' }}" data-price-unit-secondary {{ old('price_unit') === 'secondary' ? 'selected' : '' }}>{{ $sku->secondary_unit_of_measure }}</option>
-                                </select>
+                                <span class="input-group-text" id="priceUnitLabel" data-price-unit-label>{{ $sku->hasSecondaryUnit() ? $sku->secondary_unit_of_measure : $sku->unit_of_measure }}</span>
                                 @error('price') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
-                            <div class="form-hint">Per whichever unit is selected. A price you leave here is used for stock that has no price of its own, like opening stock; batches received with a price are averaged in by quantity.</div>
+                            <div class="form-hint">Always per secondary unit when one is set (otherwise per base unit). Used for stock that has no price of its own, like opening stock; batches received with a price are averaged in by quantity.</div>
                         </div>
                     </div>
                     <div class="row mb-3">

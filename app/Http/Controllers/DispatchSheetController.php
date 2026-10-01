@@ -140,6 +140,8 @@ class DispatchSheetController extends Controller
                     $this->backfillHsnCode($item['sku_id'], $item['hsn_code']);
                 }
 
+                $this->updateWeights($request->items);
+
                 $sheet->load(['items.sku', 'godown']);
                 $this->stockService->reserveStock($sheet);
 
@@ -248,6 +250,8 @@ class DispatchSheetController extends Controller
                     ]);
                     $this->backfillHsnCode($item['sku_id'], $item['hsn_code']);
                 }
+
+                $this->updateWeights($request->items);
 
                 $newItems = collect($request->items)->pluck('quantity', 'sku_id')
                     ->map(fn($q) => (float)$q)->toArray();
@@ -360,6 +364,21 @@ class DispatchSheetController extends Controller
             $hsn = $item->hsn_code ?: '-';
             return "{$item->sku->code} x {$qty} @ {$rate} [HSN {$hsn}]";
         })->implode(', ');
+    }
+
+    /**
+     * A manually recorded batch weight (optional, unrelated to the quantity
+     * x price calculation) updates the product's own Weight, so the most
+     * recently recorded figure is what's shown everywhere else — via
+     * Sku::update(), so it logs to the Activity Log like any other edit.
+     */
+    private function updateWeights(array $items): void
+    {
+        foreach ($items as $item) {
+            if (isset($item['weight']) && is_numeric($item['weight'])) {
+                Sku::find($item['sku_id'])?->update(['weight' => $item['weight']]);
+            }
+        }
     }
 
     /** Carbon casts (delivery_date) need to be plain strings to compare/log cleanly. */

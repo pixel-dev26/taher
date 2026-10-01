@@ -31,6 +31,10 @@ class StoreGrnRequest extends FormRequest
             'items.*.sku_id' => ['required', Rule::exists('skus', 'id')->where('is_active', 1)],
             'items.*.quantity' => 'required|integer|gt:0|max:999999999',
             'items.*.unit_price' => 'required|numeric|min:0|max:9999999999',
+            // A manually recorded batch weight — optional, and not used in
+            // any calculation here. See GrnController::store(), which uses
+            // it to update the product's own Weight.
+            'items.*.weight' => 'nullable|numeric|min:0|max:999999.999',
             'challan_no' => 'nullable|string|max:100',
             'supplier_name' => 'nullable|string|max:255',
             'notes' => 'nullable|string|max:1000',

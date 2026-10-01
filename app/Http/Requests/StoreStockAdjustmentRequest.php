@@ -33,6 +33,7 @@ class StoreStockAdjustmentRequest extends FormRequest
             'items.*.sku_id' => ['required', Rule::exists('skus', 'id')->where('is_active', 1)],
             'items.*.quantity' => 'required|integer|not_in:0|between:-999999999,999999999',
             'items.*.unit_price' => 'nullable|numeric|min:0|max:9999999999',
+            'items.*.weight' => 'nullable|numeric|min:0|max:999999.999',
         ];
     }
 

@@ -6,6 +6,7 @@ use App\Exceptions\InsufficientStockException;
 use App\Http\Requests\StoreStockAdjustmentRequest;
 use App\Models\AdjustmentItem;
 use App\Models\Godown;
+use App\Models\Sku;
 use App\Models\StockAdjustment;
 use App\Services\NumberGenerator;
 use App\Services\StockService;
@@ -79,6 +80,8 @@ class StockAdjustmentController extends Controller
                     ]);
                 }
 
+                $this->updateWeights($request->items);
+
                 $adjustment->load(['items.sku', 'godown']);
                 $this->stockService->processAdjustment($adjustment);
 
@@ -110,5 +113,20 @@ class StockAdjustmentController extends Controller
             $qty = (float) $item->quantity;
             return "{$item->sku->code} x " . ($qty >= 0 ? '+' : '-') . number_format(abs($qty), 0);
         })->implode(', ');
+    }
+
+    /**
+     * A manually recorded batch weight (optional, unrelated to the quantity
+     * x price calculation) updates the product's own Weight, so the most
+     * recently recorded figure is what's shown everywhere else — via
+     * Sku::update(), so it logs to the Activity Log like any other edit.
+     */
+    private function updateWeights(array $items): void
+    {
+        foreach ($items as $item) {
+            if (isset($item['weight']) && is_numeric($item['weight'])) {
+                Sku::find($item['sku_id'])?->update(['weight' => $item['weight']]);
+            }
+        }
     }
 }

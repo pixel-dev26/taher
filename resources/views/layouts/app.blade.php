@@ -329,18 +329,19 @@
            button lines up with the input rather than the label above it. */
         .line-item .li-controls { display: flex; align-items: flex-end; gap: 0.5rem; flex: 0 1 260px; }
         .line-item .li-qty { flex: 1 1 auto; min-width: 0; }
-        /* Receipts ask for a price too, so the controls need room for two fields */
-        .line-items-priced .line-item .li-controls { flex-basis: 420px; }
+        /* Receipts ask for a price too, and every priced row also carries the
+           manual weight field, so three fields need room and wrap onto their
+           own row on narrow screens rather than squeezing. */
+        .line-items-priced .line-item .li-controls { flex-basis: 420px; flex-wrap: wrap; }
         .line-item .li-qty, .line-item .li-price { flex: 1 1 0; min-width: 0; }
-        /* Dispatches also ask for an HSN code — three fields need more room,
-           and wrap onto their own row on narrow screens rather than squeezing. */
+        /* Dispatches also ask for an HSN code — four fields need more room. */
         .line-items-hsn .line-item .li-controls { flex-basis: 540px; flex-wrap: wrap; }
         /* Real flex bases, so the row can actually wrap: with a 0 basis the
-           three inputs never overflowed the line and just squeezed to a few
+           inputs never overflowed the line and just squeezed to a few
            pixels each on a phone. */
         .line-items-hsn .line-item .li-qty, .line-items-hsn .line-item .li-price { flex: 1 1 130px; }
-        .line-item .li-hsn { flex: 0 1 110px; min-width: 90px; }
-        .line-items-hsn .line-item .li-hsn { flex: 1 1 110px; }
+        .line-item .li-hsn, .line-item .li-weight-input { flex: 0 1 110px; min-width: 90px; }
+        .line-items-hsn .line-item .li-hsn, .line-items-hsn .line-item .li-weight-input { flex: 1 1 110px; }
         /* Replaces the plain unit label for a product with a secondary unit —
            kept just as narrow, not a full-width select. */
         .line-item .li-unit-select { flex: 0 0 auto; width: auto; max-width: 5.5rem; }

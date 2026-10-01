@@ -31,6 +31,7 @@ class StoreDispatchSheetRequest extends FormRequest
             'items.*.quantity' => 'required|integer|gt:0|max:999999999',
             'items.*.unit_price' => 'required|numeric|min:0|max:9999999999',
             'items.*.hsn_code' => 'required|string|max:20',
+            'items.*.weight' => 'nullable|numeric|min:0|max:999999.999',
             'customer_name' => 'nullable|string|max:255',
             'customer_phone' => 'nullable|string|max:20',
             'customer_gstin' => 'nullable|string|max:20',

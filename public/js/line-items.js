@@ -138,7 +138,15 @@
         return parseFloat(qtyInput(row).value) < 0;
     }
 
-    /** Quantity x price for a row, or null until both are filled in. */
+    /**
+     * Quantity x price for a row, or null until both are filled in.
+     *
+     * Quantity converts to the base unit only when this row's toggle is set
+     * to the secondary unit. Price always converts when the product has a
+     * secondary unit, regardless of that toggle — it's quoted per secondary
+     * unit by convention, not by a per-row choice (see ConvertsLineItemUnits,
+     * which the server applies the same way before this is ever saved).
+     */
     function rowAmount(row) {
         var price = priceInput(row);
         if (!price || price.value === '' || isRemoving(row)) {
@@ -146,7 +154,16 @@
         }
         var q = parseFloat(qtyInput(row).value);
         var p = parseFloat(price.value);
-        return isNaN(q) || isNaN(p) ? null : q * p;
+        if (isNaN(q) || isNaN(p)) {
+            return null;
+        }
+
+        var rate = parseFloat(row.dataset.conversionRate);
+        var hasSecondary = !isNaN(rate) && rate > 0;
+        var qBase = (hasSecondary && currentUnit(row) === 'secondary') ? q / rate : q;
+        var pBase = hasSecondary ? p * rate : p;
+
+        return qBase * pBase;
     }
 
     /**
@@ -394,6 +411,13 @@
         row.querySelector('.li-name').textContent = sku.name;
         row.querySelectorAll('.li-uom').forEach(function (node) { node.textContent = sku.uom; });
 
+        // Price is always per secondary unit once a product has one — fixed
+        // at row creation, not touched again by the quantity unit toggle.
+        var priceUom = row.querySelector('.li-price-uom');
+        if (priceUom) {
+            priceUom.textContent = (sku.secondary_uom && sku.conversion_rate) ? sku.secondary_uom : sku.uom;
+        }
+
         var avail = row.querySelector('.li-avail-qty');
         if (avail) {
             avail.textContent = typeof sku.available !== 'undefined' ? tidy(sku.available) : '';
@@ -415,6 +439,7 @@
             remove.setAttribute('aria-label', 'Remove ' + sku.code);
         }
 
+        var qty = qtyInput(row);
         row.dataset.baseUom = sku.uom;
         if (showAvailable && typeof sku.available !== 'undefined') {
             row.dataset.availableBase = sku.available;

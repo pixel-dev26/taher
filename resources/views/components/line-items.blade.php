@@ -87,7 +87,11 @@
 
                 @if($showPrice)
                     <div class="li-price" @if($removing) hidden @endif>
-                        <label class="cl-label" for="price-{{ $i }}">Price / <span class="li-uom">{{ $sku->unit_of_measure }}</span></label>
+                        {{-- Fixed to the secondary unit once a product has one —
+                             not tied to the quantity unit above: price is always
+                             quoted per secondary unit, by this business's own
+                             convention, independent of how quantity is counted. --}}
+                        <label class="cl-label" for="price-{{ $i }}">Price / <span class="li-price-uom">{{ $dual ? $sku->secondary_unit_of_measure : $sku->unit_of_measure }}</span></label>
                         <div class="input-group">
                             <span class="input-group-text">₹</span>
                             <input type="number"
@@ -118,6 +122,23 @@
                                required>
                     </div>
                 @endif
+
+                {{-- A manually recorded weight for this batch — not used in any
+                     calculation here. Submitting it updates the product's own
+                     Weight (shown everywhere else) to this new figure, so the
+                     most recently recorded batch weight is what's displayed. --}}
+                <div class="li-weight-input">
+                    <label class="cl-label" for="weight-{{ $i }}">Weight (kg)</label>
+                    <input type="number"
+                           id="weight-{{ $i }}"
+                           name="items[{{ $i }}][weight]"
+                           class="form-control @error("items.{$i}.weight") is-invalid @enderror"
+                           value="{{ $row['weight'] ?? '' }}"
+                           step="0.001"
+                           min="0"
+                           inputmode="decimal"
+                           placeholder="unchanged">
+                </div>
 
                 <button type="button" class="btn btn-outline-danger btn-icon li-remove" aria-label="Remove {{ $sku->code }}">
                     <i class="bi bi-trash"></i>
@@ -199,7 +220,7 @@
 
             @if($showPrice)
                 <div class="li-price">
-                    <label class="cl-label" for="price-__I__">Price / <span class="li-uom"></span></label>
+                    <label class="cl-label" for="price-__I__">Price / <span class="li-price-uom"></span></label>
                     <div class="input-group">
                         <span class="input-group-text">₹</span>
                         <input type="number"
@@ -226,6 +247,18 @@
                            required>
                 </div>
             @endif
+
+            <div class="li-weight-input">
+                <label class="cl-label" for="weight-__I__">Weight (kg)</label>
+                <input type="number"
+                       id="weight-__I__"
+                       name="items[__I__][weight]"
+                       class="form-control"
+                       step="0.001"
+                       min="0"
+                       inputmode="decimal"
+                       placeholder="unchanged">
+            </div>
 
             <button type="button" class="btn btn-outline-danger btn-icon li-remove" aria-label="Remove product">
                 <i class="bi bi-trash"></i>

@@ -5,12 +5,18 @@ namespace App\Http\Requests\Concerns;
 use App\Models\Sku;
 
 /**
- * Each line item can be entered in a product's base or secondary unit
- * (items.*.unit — 'base' or 'secondary', from the per-row selector in
- * resources/views/components/line-items.blade.php). This runs before
- * validation and rewrites quantity/unit_price to the base-unit equivalent,
- * so every rule, the controller, and StockService only ever see base-unit
- * numbers — nothing downstream needs to know a secondary unit was used.
+ * Quantity and price convert to the base unit independently of each other:
+ *
+ * - Quantity follows the per-row unit choice (items.*.unit — 'base' or
+ *   'secondary', from the selector in resources/views/components/line-items
+ *   .blade.php): whichever unit the person picked for that line.
+ * - Price is always treated as quoted per secondary unit whenever the
+ *   product has one — that's this business's pricing convention (e.g. pipe
+ *   priced per Mtr even though it's counted and moved in whole Pcs), not a
+ *   per-line choice, so it does not depend on items.*.unit at all.
+ *
+ * Both land on the same base-unit numbers everywhere downstream (rules,
+ * controllers, StockService) regardless of how either was entered.
  *
  * Done server-side, not in JS, because quantity and price directly become
  * stock and money: a tampered or buggy client must not be able to submit a
@@ -34,15 +40,14 @@ trait ConvertsLineItemUnits
 
         foreach ($items as $i => $item) {
             $sku = $skus->get($item['sku_id'] ?? null);
-            $unit = $item['unit'] ?? 'base';
-
-            if (!$sku || !$sku->hasSecondaryUnit() || $unit !== 'secondary') {
+            if (!$sku || !$sku->hasSecondaryUnit()) {
                 continue;
             }
 
-            if (isset($item['quantity']) && is_numeric($item['quantity'])) {
+            if (($item['unit'] ?? 'base') === 'secondary' && isset($item['quantity']) && is_numeric($item['quantity'])) {
                 $items[$i]['quantity'] = $sku->toBaseQuantity((float) $item['quantity'], 'secondary');
             }
+
             if (isset($item['unit_price']) && is_numeric($item['unit_price'])) {
                 $items[$i]['unit_price'] = $sku->toBaseUnitPrice((float) $item['unit_price'], 'secondary');
             }

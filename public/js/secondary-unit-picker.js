@@ -30,9 +30,7 @@
     var modalError = document.getElementById('modalUnitError');
     var saveBtn = document.getElementById('modalSaveUnit');
 
-    var priceUnitSelect = document.getElementById('price_unit');
-    var priceUnitBaseOption = document.querySelector('[data-price-unit-base]');
-    var priceUnitSecondaryOption = document.querySelector('[data-price-unit-secondary]');
+    var priceUnitLabel = document.querySelector('[data-price-unit-label]');
 
     function tidy(n) {
         return parseFloat(n).toString();
@@ -48,17 +46,10 @@
             badgeText.textContent = '1 ' + baseSelect.value + ' = ' + tidy(rate) + ' ' + unit;
         }
 
-        if (priceUnitBaseOption) {
-            priceUnitBaseOption.textContent = baseSelect.value;
-        }
-        if (priceUnitSecondaryOption) {
-            priceUnitSecondaryOption.textContent = unit;
-            priceUnitSecondaryOption.classList.toggle('d-none', !has);
-            // The secondary option just disappeared — fall back to base
-            // rather than leaving an invisible option selected.
-            if (!has && priceUnitSelect && priceUnitSelect.value === 'secondary') {
-                priceUnitSelect.value = 'base';
-            }
+        // Price is always per secondary unit once one exists — no choice to
+        // make, just reflect whichever unit that price now applies to.
+        if (priceUnitLabel) {
+            priceUnitLabel.textContent = has ? unit : baseSelect.value;
         }
     }
 

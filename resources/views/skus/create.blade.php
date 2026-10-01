@@ -56,13 +56,10 @@
                             <div class="input-group">
                                 <span class="input-group-text">₹</span>
                                 <input type="number" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price') }}" step="0.01" min="0" inputmode="decimal">
-                                <select class="form-select" id="price_unit" name="price_unit" style="max-width: 6.5rem;">
-                                    <option value="base" data-price-unit-base {{ old('price_unit', 'base') === 'base' ? 'selected' : '' }}>{{ old('unit_of_measure', 'Pcs') }}</option>
-                                    <option value="secondary" class="d-none" data-price-unit-secondary {{ old('price_unit') === 'secondary' ? 'selected' : '' }}></option>
-                                </select>
+                                <span class="input-group-text" id="priceUnitLabel" data-price-unit-label>{{ old('unit_of_measure', 'Pcs') }}</span>
                                 @error('price') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
-                            <div class="form-hint">Starting price, per whichever unit is selected. Each batch you receive with its own price updates the average.</div>
+                            <div class="form-hint">Starting price, always per secondary unit when one is set (otherwise per base unit). Each batch you receive with its own price updates the average.</div>
                         </div>
                     </div>
                     <div class="row mb-3">

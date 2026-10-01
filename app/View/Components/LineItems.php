@@ -97,6 +97,7 @@ class LineItems extends Component
                 // when nothing has been typed here yet — one less thing to
                 // retype for a product that's already classified.
                 'hsn_code' => $item['hsn_code'] ?? $sku->hsn_code,
+                'weight' => $item['weight'] ?? null,
                 'available' => $record
                     ? (float) $record->on_hand - (float) $record->reserved + ($held[$sku->id] ?? 0.0)
                     : null,
