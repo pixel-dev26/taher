@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\DailyReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DispatchFulfillmentController;
 use App\Http\Controllers\DispatchSheetController;
@@ -99,6 +100,14 @@ Route::middleware(['auth', 'active', 'ensurePasswordChanged'])->group(function (
             return redirect()->route('dispatch-sheets.index', ['tab' => 'history'] + $request->query());
         })->name('dispatch-register');
         Route::get('stock-ledger', [ReportController::class, 'stockLedger'])->name('stock-ledger');
+
+        // Daily Report — every day's stock in, stock out, transfers and
+        // corrections in one place. Nothing is stored: today's or any past
+        // day's report is reconstructed fresh from the (append-only) stock
+        // ledger every time it's opened or downloaded, the same way every
+        // other PDF in this app works.
+        Route::get('daily', [DailyReportController::class, 'index'])->name('daily');
+        Route::get('daily/pdf', [DailyReportController::class, 'downloadPdf'])->name('daily.pdf');
 
         // Exports
         Route::get('dispatch-register/export/excel', [ReportController::class, 'exportDispatchRegisterExcel'])->name('dispatch-register.export.excel');

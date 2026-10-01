@@ -754,6 +754,9 @@
                 </a>
 
                 <div class="sidebar-section">Records &amp; Setup</div>
+                <a class="nav-link {{ request()->is('reports/daily*') ? 'active' : '' }}" href="{{ route('reports.daily') }}">
+                    <i class="bi bi-calendar2-check"></i> Daily Report
+                </a>
                 <a class="nav-link {{ request()->is('reports/stock-ledger*') ? 'active' : '' }}" href="{{ route('reports.stock-ledger') }}">
                     <i class="bi bi-book-fill"></i> Movements
                 </a>

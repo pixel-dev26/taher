@@ -531,6 +531,49 @@ class StockService
         });
     }
 
+    /**
+     * One calendar day's stock activity, for the Daily Report screen and its
+     * PDF — rebuilt fresh from the stock ledger every time, never stored, so
+     * a past date is always exactly what actually happened that day.
+     *
+     * 'reserved' and 'reserve_released' are a hold on stock, not a physical
+     * movement (nothing leaves or enters a godown until the dispatch is
+     * actually confirmed), so they're kept out of the in/out totals — they
+     * still appear in the full entry list for completeness.
+     */
+    public function dailyReport(string $date): array
+    {
+        $entries = StockLedger::with(['sku', 'godown', 'performer'])
+            ->whereDate('created_at', $date)
+            ->orderBy('created_at')
+            ->get();
+
+        $isIn = fn ($e) => in_array($e->movement_type, ['stock_in', 'transfer_in', 'transfer_rejected'], true)
+            || ($e->movement_type === 'adjustment' && (float) $e->quantity > 0);
+        $isOut = fn ($e) => in_array($e->movement_type, ['dispatch_out', 'transfer_out'], true)
+            || ($e->movement_type === 'adjustment' && (float) $e->quantity < 0);
+
+        $stockIn = $entries->filter($isIn)->values();
+        $stockOut = $entries->filter($isOut)->values();
+        $byType = $entries->groupBy('movement_type');
+
+        $documentCount = fn (string $type) => $byType->get($type, collect())->pluck('reference_id')->unique()->count();
+
+        return [
+            'date' => $date,
+            'entries' => $entries,
+            'stockIn' => $stockIn,
+            'stockOut' => $stockOut,
+            'totalIn' => $stockIn->sum(fn ($e) => abs((float) $e->quantity)),
+            'totalOut' => $stockOut->sum(fn ($e) => abs((float) $e->quantity)),
+            'grnCount' => $documentCount('stock_in'),
+            'dispatchCount' => $documentCount('dispatch_out'),
+            'transferOutCount' => $documentCount('transfer_out'),
+            'transferInCount' => $documentCount('transfer_in'),
+            'adjustmentCount' => $documentCount('adjustment'),
+        ];
+    }
+
     private function createLedgerEntry(
         int $skuId,
         int $godownId,
