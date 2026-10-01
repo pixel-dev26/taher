@@ -326,22 +326,19 @@
         .line-item .li-name { font-size: 0.9rem; font-weight: 600; color: var(--text-dark); word-break: break-word; }
         .line-item .li-avail { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
         /* Quantity and remove share a row aligned on their bottom edge, so the
-           button lines up with the input rather than the label above it. */
-        .line-item .li-controls { display: flex; align-items: flex-end; gap: 0.5rem; flex: 0 1 260px; }
-        .line-item .li-qty { flex: 1 1 auto; min-width: 0; }
-        /* Receipts ask for a price too, and every priced row also carries the
-           manual weight field, so three fields need room and wrap onto their
-           own row on narrow screens rather than squeezing. */
-        .line-items-priced .line-item .li-controls { flex-basis: 420px; flex-wrap: wrap; }
-        .line-item .li-qty, .line-item .li-price { flex: 1 1 0; min-width: 0; }
-        /* Dispatches also ask for an HSN code — four fields need more room. */
-        .line-items-hsn .line-item .li-controls { flex-basis: 540px; flex-wrap: wrap; }
-        /* Real flex bases, so the row can actually wrap: with a 0 basis the
-           inputs never overflowed the line and just squeezed to a few
-           pixels each on a phone. */
-        .line-items-hsn .line-item .li-qty, .line-items-hsn .line-item .li-price { flex: 1 1 130px; }
-        .line-item .li-hsn, .line-item .li-weight-input { flex: 0 1 110px; min-width: 90px; }
-        .line-items-hsn .line-item .li-hsn, .line-items-hsn .line-item .li-weight-input { flex: 1 1 110px; }
+           button lines up with the input rather than the label above it.
+           Each field below has a real min-width, not 0 — up to four of them
+           (quantity, price, HSN, weight) share this row, and a genuine
+           minimum is what makes the group WRAP onto its own line as a whole
+           when the row runs out of room, instead of every field shrinking
+           individually until its typed digits are clipped behind the
+           quantity spinner. */
+        .line-item .li-controls { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 0.5rem 0.75rem; flex: 1 1 260px; }
+        /* Quantity carries a number input AND the unit select/label side by
+           side (e.g. "100" + "Pcs"), so it needs more room than the others. */
+        .line-item .li-qty { flex: 1 1 160px; min-width: 160px; }
+        .line-item .li-price { flex: 1 1 130px; min-width: 130px; }
+        .line-item .li-hsn, .line-item .li-weight-input { flex: 1 1 110px; min-width: 100px; }
         /* Replaces the plain unit label for a product with a secondary unit —
            kept just as narrow, not a full-width select. */
         .line-item .li-unit-select { flex: 0 0 auto; width: auto; max-width: 5.5rem; }
